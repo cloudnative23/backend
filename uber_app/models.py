@@ -9,7 +9,7 @@ class Account(models.Model):
     Password = models.TextField()
 
     def __str__(self):
-        return self.name
+        return f'UserID:{self.UserID}'
 
     class Meta:
         db_table = 'Account'
@@ -25,7 +25,7 @@ class Request(models.Model):
     Time = models.DateTimeField()
 
     def __str__(self):
-        return self.name
+        return f'RequestID:{self.RequestID}'
 
     class Meta:
         db_table = 'Request'
@@ -38,7 +38,7 @@ class Route(models.Model):
     Work_Status = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.name
+        return f'RouteID:{self.RouteID}'
 
     class Meta:
         db_table = 'Route'
@@ -51,7 +51,7 @@ class RoutePassenger(models.Model):
     Work_Status = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.name
+        return f'PassengerID:{self.PassengerID} RouteID:{self.RouteID}'
 
     class Meta:
         unique_together = (('PassengerID', 'RouteID'),)
@@ -63,7 +63,7 @@ class RouteStation(models.Model):
     Time = models.DateTimeField()
 
     def __str__(self):
-        return self.name
+        return f'StationID:{self.StationID} RouteID:{self.RouteID}'
 
     class Meta:
         unique_together = (('StationID', 'RouteID'),)
@@ -74,7 +74,7 @@ class Station(models.Model):
     StationName = models.TextField()
 
     def __str__(self):
-        return self.name
+        return f'StationID:{self.StationID}'
 
     class Meta:
         db_table = 'Station'
