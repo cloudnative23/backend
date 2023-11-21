@@ -5,7 +5,7 @@ from django.db import models
 class Account(models.Model):
     UserID = models.AutoField(primary_key=True)
     Name = models.TextField()
-    Email = models.TextField()
+    Email = models.TextField(unique=True)
     Password = models.TextField()
 
     def __str__(self):
