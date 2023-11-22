@@ -7,9 +7,14 @@ from django.contrib.auth.models import User
 
 # Create your tests here.
 class ModelTest(TestCase):
-    def setUp(self):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         user = User.objects.create_user('test@gmail.com','test@gmail.com','1234')
         Account.objects.create(Name="TestMan",Email='test@gmail.com',Password="1234")
+        Station.objects.create(StationName='台北車站')
+        print(user)
 
     def test_login(self):
         data = {'email': 'test@gmail.com', 'password': '1234'}
