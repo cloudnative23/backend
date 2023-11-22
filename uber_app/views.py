@@ -22,11 +22,15 @@ def login_view(request):
             else:
                 return JsonResponse({'error': 'Object not found'}, status=403)
         except:
-            return JsonResponse({'message': 'json load fails'},status=403)
+            return JsonResponse({'message': 'json load fails'},status=400)
     return JsonResponse({'error': 'Invalid request method'}, status=403)
 
 
 def logout_view(request):
-    logout(request)
-    return HttpResponse("Logout sucessful",status=204)
+    if request.user.is_authenticated:
+        logout(request)
+        return HttpResponse("Logout sucessful",status=204)
+    else:
+        return HttpResponse("Not authenticated user",status=401)
+    
 

@@ -34,4 +34,4 @@ class ModelTest(TestCase):
         self.assertFalse(self.client.session.get('_auth_user_id'))
         response = self.client.post(url)
         self.assertFalse(self.client.session.get('_auth_user_id'))
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.status_code, 401)
