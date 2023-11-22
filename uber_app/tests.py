@@ -27,3 +27,11 @@ class ModelTest(TestCase):
         response = self.client.post(url)
         self.assertEqual(response.status_code, 204)
         self.assertFalse(self.client.session.get('_auth_user_id'))
+    
+    def test_logout_fail(self):
+        url = reverse('logout')
+        self.client.login(username='testuser', password='testpassword')
+        self.assertFalse(self.client.session.get('_auth_user_id'))
+        response = self.client.post(url)
+        self.assertFalse(self.client.session.get('_auth_user_id'))
+        self.assertEqual(response.status_code, 204)
