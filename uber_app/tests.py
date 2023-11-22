@@ -15,6 +15,7 @@ class ModelTest(TestCase):
         data = {'email': 'test@gmail.com', 'password': '1234'}
         url = reverse('login')
         response = self.client.post(url, json.dumps(data), content_type='application/json')
+        self.assertTrue(self.client.session['_auth_user_id'])
         self.assertEqual(response.status_code, 204)
         self.assertIsInstance(response, JsonResponse)
 

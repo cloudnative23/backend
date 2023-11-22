@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-p$xo-9*dm)p!g85_&$ael#9x2_6)=nbg5y_ej2o#!n!&j-c7#f
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
+LOGIN_URL = 'login/'
 
 # Application definition
 
@@ -126,3 +126,16 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',  # Change this according to your Redis server's URL & port
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"  # Use the 'default' cache alias defined earlier

@@ -3,6 +3,8 @@ from django.http import *
 import json
 from .models import *
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.sessions.models import Session
+from django.contrib.auth.decorators import login_required
 # Create your views here.
 
 
@@ -23,6 +25,7 @@ def login_view(request):
             return JsonResponse({'message': 'json load fails'},status=403)
     return JsonResponse({'error': 'Invalid request method'}, status=403)
 
+@login_required
 def logout_view(request):
     logout(request)
     return HttpResponse("Logout sucessful",status=204)
