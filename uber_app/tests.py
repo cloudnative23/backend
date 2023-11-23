@@ -116,3 +116,42 @@ class ModelTest(TestCase):
         self.assertEqual(len(RouteCar.objects.filter(RouteID=decode_content['id'])),0)
         self.assertEqual(len(RouteStation.objects.filter(RouteID=decode_content['id'])),0)
         self.assertEqual(len(RoutePassenger.objects.filter(RouteID=decode_content['id'])),0)
+    
+    def test_add_stop_station(self):
+        url1 = reverse('add_route')
+        user = User.objects.create_user('testuser', 'test@example.com', 'testpassword')
+        Account.objects.create(UserID=user.id,Name='testuser',Email='test@example.com',Password='testpassword')
+        self.client.login(username='testuser', password='testpassword')
+        data = {"date": "2023-10-22","workStatus": False,"stations": [{"id": 3,"datetime": "2023-10-22T17:30"},{"id": 2,"datetime": "2023-10-22T18:10"}],"carInfo": {"color": "紅色","capacity": 4,"licensePlateNumber": "ABC-1234"}}
+        response = self.client.post(url1,json.dumps(data),content_type='application/json')
+        self.assertEqual(response.status_code, SUCESS_WITH_DATA)
+        decode_content = json.loads(response.content.decode("unicode_escape"))
+        id = decode_content['id']
+        data = {"datetime": "2023-10-22T10:30"}
+        url2 = reverse('add_delete_stop_station',args=[id,1])
+        response = self.client.put(url2,json.dumps(data),content_type='application/json')
+        decode_content = json.loads(response.content.decode("unicode_escape"))
+        self.assertEqual(response.status_code,SUCESS_WITH_DATA)
+        self.assertEqual(decode_content['id'],1)
+        self.assertEqual(decode_content['name'],Station.objects.get(StationID=1).StationName)
+        self.assertEqual(decode_content['datetime'],data['datetime'])
+        self.assertEqual(decode_content['on'],[])
+        self.assertEqual(decode_content['off'],[])
+    
+    def test_delete_stop_station(self):
+        url1 = reverse('add_route')
+        user = User.objects.create_user('testuser', 'test@example.com', 'testpassword')
+        Account.objects.create(UserID=user.id,Name='testuser',Email='test@example.com',Password='testpassword')
+        self.client.login(username='testuser', password='testpassword')
+        data = {"date": "2023-10-22","workStatus": False,"stations": [{"id": 3,"datetime": "2023-10-22T17:30"},{"id": 1,"datetime": "2023-10-22T17:50"},{"id": 2,"datetime": "2023-10-22T18:10"}],"carInfo": {"color": "紅色","capacity": 4,"licensePlateNumber": "ABC-1234"}}
+        response = self.client.post(url1,json.dumps(data),content_type='application/json')
+        self.assertEqual(response.status_code, SUCESS_WITH_DATA)
+        decode_content = json.loads(response.content.decode("unicode_escape"))
+        id = decode_content['id']
+        url2 = reverse('add_delete_stop_station',args=[id,1])
+        response = self.client.delete(url2,json.dumps(data),content_type='application/json')
+        self.assertEqual(response.status_code,SUCCESS_NO_DATA)
+        station_ids_to_check = [2, 3]
+        existing_station_ids = set(RouteStation.objects.filter(RouteID=id).values_list('StationID', flat=True))
+        self.assertEqual(set(station_ids_to_check) == existing_station_ids, True)
+

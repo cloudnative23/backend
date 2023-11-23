@@ -30,8 +30,7 @@ def login_view(request):
             user = authenticate(request,username = email, password = password)
             if user is not None:
                 login(request, user)
-                response = HttpResponse(status=SUCCESS_NO_DATA,content_type='application/json')
-                return response
+                return HttpResponse(status=SUCCESS_NO_DATA,content_type='application/json')
             else:
                 return JsonResponse({'message': '無此使用者'}, status=NOT_FOUND)
         except:
@@ -150,3 +149,54 @@ def delete_route_view(request,route_id):
             return JsonResponse({'message': '錯誤要求方法'}, status=ERROR_PARA)
     else:
         return JsonResponse({"message":"未登入"},status=NOT_LOGIN)
+
+def add_delete_stop_station(request,route_id,station_id):
+    if request.user.is_authenticated:
+        if request.method == 'PUT':
+            return add_stop_station(request=request,route_id=route_id,station_id=station_id)
+        elif request.method == 'DELETE':
+            return delete_stop_station(request=request,route_id=route_id,station_id=station_id)
+        else:
+            return JsonResponse({'message': '錯誤要求方法'}, status=ERROR_PARA)
+    else:
+        return JsonResponse({"message":"未登入"},status=NOT_LOGIN)
+
+def add_stop_station(request,route_id,station_id):
+    try:
+        user_id = request.user.id
+        data = json.loads(request.body)
+        time = timezone.make_aware(datetime.strptime(data['datetime'], '%Y-%m-%dT%H:%M'))
+    except:
+        return JsonResponse({'message': 'Json讀取失敗'},status=ERROR_PARA)
+    route = Route.objects.filter(RouteID=route_id)[0]
+    if not route:
+        return JsonResponse({'message': '找不到物件'}, status=NOT_FOUND)
+    if route.DriverID != user_id:
+        JsonResponse({'message': '權限錯誤'},status=PERMISSION_ERROR)
+    try:
+        RouteStation.objects.create(RouteID=route_id,StationID=station_id,Time=time)
+        station_name = Station.objects.get(StationID=station_id).StationName
+        res = {}
+        res['id'] = station_id
+        res['name'] = station_name
+        res['datetime'] = data['datetime']
+        res['on'] = []
+        res['off'] = []
+        return JsonResponse(res,status=SUCESS_WITH_DATA)
+    except:
+        return JsonResponse({'message': '資料錯誤'},status=ERROR_PARA)
+
+def delete_stop_station(request,route_id,station_id):
+    try:
+        user_id = request.user.id
+    except:
+        return JsonResponse({'message': 'Json讀取失敗'},status=ERROR_PARA)
+    route = Route.objects.filter(RouteID=route_id)[0]
+    if not route:
+        return JsonResponse({'message': '找不到物件'}, status=NOT_FOUND)
+    if route.DriverID != user_id:
+        JsonResponse({'message': '權限錯誤'},status=PERMISSION_ERROR)
+    route_station = RouteStation.objects.filter(RouteID=route_id,StationID=station_id)
+    if route_station:
+        route_station.delete()
+    return HttpResponse(status=SUCCESS_NO_DATA,content_type='application/json')
