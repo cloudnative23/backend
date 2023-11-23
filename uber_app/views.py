@@ -6,7 +6,10 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.sessions.models import Session
 from django.contrib.auth.decorators import login_required
 # Create your views here.
-
+ERROR_PARA = 400
+NOT_LOGIN = 401
+NOT_FOUND = 404
+PERMISSION_ERROR = 403
 
 def login_view(request):
     if request.method == 'POST':
@@ -17,46 +20,51 @@ def login_view(request):
             user = authenticate(request,username = email, password = password)
             if user is not None:
                 login(request, user)
-                response = JsonResponse({'message': 'Login successful'}, status=204)
+                response = JsonResponse({'message': '登入成功'}, status=204)
                 return response
             else:
-                return JsonResponse({'error': 'Object not found'}, status=403)
+                return JsonResponse({'error': '無此使用者'}, status=NOT_FOUND)
         except:
-            return JsonResponse({'message': 'json load fails'},status=400)
-    return JsonResponse({'error': 'Invalid request method'}, status=403)
+            return JsonResponse({'message': 'Json讀取失敗'},status=ERROR_PARA)
+    return JsonResponse({'error': '錯誤要求方法'}, status=ERROR_PARA)
 
 
 def logout_view(request):
     if request.user.is_authenticated:
         logout(request)
-        return JsonResponse({"message":"Logout sucessful"},status=204)
+        return JsonResponse({"message":"登出成功"},status=204)
     else:
-        return JsonResponse({"message":"Not authenticated user"},status=401)
+        return JsonResponse({"message":"未登入"},status=NOT_LOGIN)
 
 def station_detail_view(request,station_id):
     if request.user.is_authenticated:
         if request.method == 'GET':
             try:
                 obj = Station.objects.get(pk=station_id)
-                data = {'id':obj.id,'name':obj.name}
+                data = {'id':obj.StationID,'name':obj.StationName}
                 return JsonResponse(data, status=200)
             except:
-                return JsonResponse({'error': 'Object not found'}, status=400)
+                return JsonResponse({'error': '找不到此站點'}, status=NOT_FOUND)
         else:
-            return JsonResponse({'error': 'Invalid request method'}, status=403)
+            return JsonResponse({'error': '錯誤要求方法'}, status=ERROR_PARA)
     else:
-        return JsonResponse("Not authenticated user",status=401)
+        return JsonResponse("未登入",status=NOT_LOGIN)
 
 def station_list_view(request):
     if request.user.is_authenticated:
         if request.method == 'GET':
             try:
-                stations = Station.objects.order_by('id').values('id', 'name')
+                stations = Station.objects.order_by('StationID').values('StationID', 'StationName')
                 stations_list = list(stations)
-                return JsonResponse(stations_list,status=200,safe=False)
+                res = []
+                for data in stations_list:
+                    id = data['StationID']
+                    name = data['StationName']
+                    res.append({'id':id,'name':name})
+                return JsonResponse(res,status=200,safe=False)
             except:
-                return JsonResponse({'error': 'Object not found'}, status=400)
+                return JsonResponse([], status=200)
         else:
-            return JsonResponse({'error': 'Invalid request method'}, status=403)
+            return JsonResponse({'error': '錯誤要求方法'}, status=ERROR_PARA)
     else:
-        return JsonResponse("Not authenticated user",status=401)
+        return JsonResponse("未登入",status=NOT_LOGIN)
