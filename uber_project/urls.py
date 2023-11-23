@@ -25,6 +25,8 @@ urlpatterns = [
     path('api/stations/<int:station_id>/', views.station_detail_view, name='station_detail'),
     path('api/stations/', views.station_list_view, name='station_list'),
     path('api/routes/', views.add_route, name='add_route'),
-    path('api/routes/<int:route_id>/', views.delete_route_view, name='delete_route'),
+    path('api/routes/<int:route_id>/', views.get_delete_route_view, name='get_delete_route'),
     path('api/routes/<int:route_id>/stations/<int:station_id>/', views.add_delete_stop_station, name='add_delete_stop_station'),
+    path('api/me/',views.myinfo,name='myinfo'),
+    path('api/routes/<int:route_id>/stations/', views.get_stop_station, name='get_stop_station'),
 ]

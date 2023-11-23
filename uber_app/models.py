@@ -60,7 +60,7 @@ class RouteCar(models.Model):
 
 class RoutePassenger(models.Model):
     PassengerID = models.IntegerField()
-    RouteID = models.IntegerField(primary_key=True)
+    RouteID = models.IntegerField()
     On = models.IntegerField()
     Off = models.IntegerField()
     Work_Status = models.BooleanField(default=True)

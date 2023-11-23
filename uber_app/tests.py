@@ -109,7 +109,7 @@ class ModelTest(TestCase):
         self.assertEqual(response.status_code, SUCESS_WITH_DATA)
         decode_content = json.loads(response.content.decode("unicode_escape"))
         RoutePassenger.objects.create(PassengerID=5,RouteID=decode_content['id'],On=6,Off=7)
-        url2 = reverse('delete_route',args=[decode_content['id']])
+        url2 = reverse('get_delete_route',args=[decode_content['id']])
         response = self.client.delete(url2,content_type='application/json')
         self.assertEqual(response.status_code, SUCCESS_NO_DATA)
         self.assertEqual(len(Route.objects.filter(RouteID=decode_content['id'])),0)
@@ -155,3 +155,49 @@ class ModelTest(TestCase):
         existing_station_ids = set(RouteStation.objects.filter(RouteID=id).values_list('StationID', flat=True))
         self.assertEqual(set(station_ids_to_check) == existing_station_ids, True)
 
+    def test_myinfo(self):
+        url = reverse('myinfo')
+        user = User.objects.create_user('testuser', 'test@example.com', 'testpassword')
+        Account.objects.create(UserID=user.id,Name='testuser',Email='test@example.com',Password='testpassword',Avatar="https://example.com/avatar.png",Phone="0912123456")
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.get(url,content_type='application/json')
+        decode_content = json.loads(response.content.decode("unicode_escape"))
+        self.assertEqual(response.status_code,SUCESS_WITH_DATA)
+    
+    def test_get_route(self):
+        url1 = reverse('add_route')
+        user = User.objects.create_user('testuser', 'test@example.com', 'testpassword')
+        Account.objects.create(UserID=user.id,Name='John James',Email='test@example.com',Password='testpassword',Phone='0928123456',Avatar="https://example.com/avatar.png")
+        self.client.login(username='testuser', password='testpassword')
+        data = {"date": "2023-10-22","workStatus": False,"stations": [{"id": 3,"datetime": "2023-10-22T17:30"},{"id": 1,"datetime": "2023-10-22T17:50"},{"id": 2,"datetime": "2023-10-22T18:10"}],"carInfo": {"color": "紅色","capacity": 4,"licensePlateNumber": "ABC-1234"}}
+        response = self.client.post(url1,json.dumps(data),content_type='application/json')
+        self.assertEqual(response.status_code, SUCESS_WITH_DATA)
+        decode_content = json.loads(response.content.decode("unicode_escape"))
+
+        user = User.objects.create_user('testuser2', 'test2@example.com', 'testpassword')
+        Account.objects.create(UserID=user.id,Name='Bill Gates',Email='test2@example.com',Password='testpassword',Phone='0982104928')
+        self.client.login(username='testuser2', password='testpassword')
+        RoutePassenger.objects.create(PassengerID=user.id,RouteID=decode_content['id'],On=3,Off=2)
+        url2 = reverse('get_delete_route',args=[decode_content['id']])
+        response = self.client.get(url2,content_type='application/json')
+        self.assertEqual(response.status_code,SUCESS_WITH_DATA)
+    
+    def test_get_stop_station(self):
+        url1 = reverse('add_route')
+        user = User.objects.create_user('testuser', 'test@example.com', 'testpassword')
+        Account.objects.create(UserID=user.id,Name='John James',Email='test@example.com',Password='testpassword',Phone='0928123456',Avatar="https://example.com/avatar.png")
+        self.client.login(username='testuser', password='testpassword')
+        data = {"date": "2023-10-22","workStatus": False,"stations": [{"id": 3,"datetime": "2023-10-22T17:30"},{"id": 1,"datetime": "2023-10-22T17:50"},{"id": 2,"datetime": "2023-10-22T18:10"}],"carInfo": {"color": "紅色","capacity": 4,"licensePlateNumber": "ABC-1234"}}
+        response = self.client.post(url1,json.dumps(data),content_type='application/json')
+        self.assertEqual(response.status_code, SUCESS_WITH_DATA)
+        decode_content = json.loads(response.content.decode("unicode_escape"))
+        route_id = decode_content['id']
+
+        user = User.objects.create_user('testuser2', 'test2@example.com', 'testpassword')
+        Account.objects.create(UserID=user.id,Name='Bill Gates',Email='test2@example.com',Password='testpassword',Phone='0982104928')
+        self.client.login(username='testuser2', password='testpassword')
+        RoutePassenger.objects.create(PassengerID=user.id,RouteID=decode_content['id'],On=3,Off=2)
+        url2 = reverse('get_stop_station',args=[route_id])
+        response = self.client.get(url2,content_type='application/json')
+        self.assertEqual(response.status_code,SUCESS_WITH_DATA)
+        decode_content = json.loads(response.content.decode("unicode_escape"))
