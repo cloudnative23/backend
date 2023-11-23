@@ -3,10 +3,12 @@ from django.db import models
 # Create your models here.
 
 class Account(models.Model):
-    UserID = models.AutoField(primary_key=True)
+    UserID = models.IntegerField(primary_key=True)
     Name = models.TextField()
     Email = models.TextField(unique=True)
     Password = models.TextField()
+    Avatar = models.URLField(max_length = 200)
+    Phone = models.TextField()
 
     def __str__(self):
         return f'UserID:{self.UserID}'
@@ -33,8 +35,8 @@ class Request(models.Model):
 class Route(models.Model):
     RouteID = models.AutoField(primary_key=True)
     DriverID = models.IntegerField()
-    Status = models.BooleanField(default=True)
-    Time = models.DateTimeField()
+    Status = models.TextField(default='available')
+    Time = models.DateField()
     Work_Status = models.BooleanField(default=True)
 
     def __str__(self):
@@ -42,10 +44,23 @@ class Route(models.Model):
 
     class Meta:
         db_table = 'Route'
+        unique_together = (('DriverID', 'Status','Work_Status'),)
+
+class RouteCar(models.Model):
+    RouteID = models.IntegerField(primary_key=True)
+    Color = models.TextField()
+    Capacity = models.IntegerField()
+    LicensePlateNumber = models.TextField()
+
+    def __str__(self):
+        return f'RouteID:{self.RouteID}'
+    
+    class Meta:
+        db_table = 'RouteCar'
 
 class RoutePassenger(models.Model):
     PassengerID = models.IntegerField()
-    RouteID = models.IntegerField()
+    RouteID = models.IntegerField(primary_key=True)
     On = models.IntegerField()
     Off = models.IntegerField()
     Work_Status = models.BooleanField(default=True)

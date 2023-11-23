@@ -24,4 +24,6 @@ urlpatterns = [
     path('api/logout/',views.logout_view,name='logout'),
     path('api/stations/<int:station_id>/', views.station_detail_view, name='station_detail'),
     path('api/stations/', views.station_list_view, name='station_list'),
+    path('api/routes/', views.add_route, name='add_route'),
+    path('api/routes/<int:route_id>/', views.delete_route_view, name='delete_route'),
 ]
