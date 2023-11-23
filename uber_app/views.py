@@ -29,8 +29,34 @@ def login_view(request):
 def logout_view(request):
     if request.user.is_authenticated:
         logout(request)
-        return HttpResponse("Logout sucessful",status=204)
+        return JsonResponse({"message":"Logout sucessful"},status=204)
     else:
-        return HttpResponse("Not authenticated user",status=401)
-    
+        return JsonResponse({"message":"Not authenticated user"},status=401)
 
+def station_detail_view(request,station_id):
+    if request.user.is_authenticated:
+        if request.method == 'GET':
+            try:
+                obj = Station.objects.get(pk=station_id)
+                data = {'id':obj.id,'name':obj.name}
+                return JsonResponse(data, status=200)
+            except:
+                return JsonResponse({'error': 'Object not found'}, status=400)
+        else:
+            return JsonResponse({'error': 'Invalid request method'}, status=403)
+    else:
+        return JsonResponse("Not authenticated user",status=401)
+
+def station_list_view(request):
+    if request.user.is_authenticated:
+        if request.method == 'GET':
+            try:
+                stations = Station.objects.order_by('id').values('id', 'name')
+                stations_list = list(stations)
+                return JsonResponse(stations_list,status=200,safe=False)
+            except:
+                return JsonResponse({'error': 'Object not found'}, status=400)
+        else:
+            return JsonResponse({'error': 'Invalid request method'}, status=403)
+    else:
+        return JsonResponse("Not authenticated user",status=401)

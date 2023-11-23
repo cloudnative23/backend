@@ -20,6 +20,8 @@ from uber_app import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('login/',views.login_view,name='login'),
-    path('logout/',views.logout_view,name='logout'),
+    path('api/login/',views.login_view,name='login'),
+    path('api/logout/',views.logout_view,name='logout'),
+    path('api/stations/<int:station_id>/', views.station_detail_view, name='station_detail'),
+    path('api/stations/', views.station_list_view, name='station_list'),
 ]
