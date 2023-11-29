@@ -15,16 +15,10 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path
-from uber_app import views
+from uber_app.views.users import *
 
 urlpatterns = [
-    path('api/login/',views.login_view,name='login'),
-    path('api/logout/',views.logout_view,name='logout'),
-    path('api/stations/<int:station_id>/', views.station_detail_view, name='station_detail'),
-    path('api/stations/', views.station_list_view, name='station_list'),
-    path('api/routes/', views.add_route, name='add_route'),
-    path('api/routes/<int:route_id>/', views.get_delete_route_view, name='get_delete_route'),
-    path('api/routes/<int:route_id>/stations/<int:station_id>/', views.add_delete_stop_station, name='add_delete_stop_station'),
-    path('api/me/',views.myinfo,name='myinfo'),
-    path('api/routes/<int:route_id>/stations/', views.get_stop_station, name='get_stop_station'),
+    path("me", UsersView.as_view()),
+    path("login", LoginView.as_view()),
+    path("logout", LogoutView.as_view())
 ]
