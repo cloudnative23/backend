@@ -16,9 +16,12 @@ Including another URLconf
 """
 from django.urls import path
 from uber_app.views.users import *
+from uber_app.views.stations import *
 
 urlpatterns = [
     path("me", UsersView.as_view()),
     path("login", LoginView.as_view()),
-    path("logout", LogoutView.as_view())
+    path("logout", LogoutView.as_view()),
+    path("stations", StationView.as_view()),
+    path("stations/<int:id>", StationIdView.as_view())
 ]
