@@ -1,6 +1,7 @@
 from django.views import View
 from django.http import HttpResponse, JsonResponse
 import json
+from datetime import datetime, date
 from functools import wraps
 
 class HttpResponseNoContent(HttpResponse):
@@ -8,9 +9,7 @@ class HttpResponseNoContent(HttpResponse):
 
 class ErrorResponse(JsonResponse):
     def __init__(self, message="An error occurred", status=400):
-        super().__init__({
-            "message": message
-        }, status=status)
+        super().__init__({"message": message}, status=status)
 
 class BadRequestResponse(ErrorResponse):
     def __init__(self):
@@ -38,3 +37,11 @@ def json_api(view_func):
             return BadRequestResponse()
         return view_func(request, *args, **kwargs)
     return wrapper_view_func
+
+def datetime_from_str(dt):
+    if dt == "today":
+        return datetime.fromisoformat(date.today().isoformat())
+    elif dt == "now":
+        return datetime.now()
+    else:
+        return datetime.fromisoformat(dt)
