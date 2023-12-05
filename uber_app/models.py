@@ -15,6 +15,19 @@ class Account(models.Model):
     def get_short_name(self) -> str:
         return self.Name
 
+    def to_dict(self, contact=False):
+        result = {
+            "id": self.UserID,
+            "name": self.Name,
+            "avatar": self.Avatar
+        }
+        if contact:
+            result.update({
+                "email": self.Email,
+                "phone": self.Phone
+            })
+        return result
+
     def __str__(self):
         return f'UserID:{self.UserID}'
 
@@ -30,10 +43,19 @@ class Request(models.Model):
     Off = models.ForeignKey("Station", db_column="Off", on_delete=models.PROTECT, related_name="+")
     Status = models.BooleanField(default=True)
     Work_Status = models.BooleanField(default=True)
-    Time = models.DateTimeField()
+    Date = models.DateField()
 
     def __str__(self):
         return f'RequestID:{self.RequestID}'
+
+    def to_dict(self):
+        return {
+            "id": self.RequestID,
+            "status": self.Status,
+            "date": self.Date,
+            "workStatus": self.Work_Status,
+            "route": self.Route.to_dict()
+        }
 
     class Meta:
         db_table = 'Request'
@@ -43,7 +65,7 @@ class Route(models.Model):
     Driver = models.ForeignKey("Account", db_column="DriverID", on_delete=models.PROTECT,
                                related_name="Driver_Routes")
     Status = models.TextField(default='available')
-    Time = models.DateField()
+    Date = models.DateField()
     Work_Status = models.BooleanField(default=True)
     Passengers = models.ManyToManyField(Account,
                                         through="RoutePassenger",
@@ -57,6 +79,26 @@ class Route(models.Model):
     Car_Capacity = models.IntegerField()
     LicensePlateNumber = models.TextField()
 
+    def to_dict(self, detail=True, uid=None):
+        is_driver=self.Driver.UserID == uid
+        result = {
+            "id": self.RouteID,
+            "status": self.Status,
+            "date": self.Date,
+            "workStatus": self.Work_Status,
+            "driver": self.Driver.to_dict(contact=detail),
+            "carInfo": {
+                "color": self.Car_Color,
+                "capacity": self.Car_Capacity,
+                "licensePlateNumber": self.LicensePlateNumber
+            }
+        }
+        # Populate Passengers
+        passengers = self.Passengers
+        for passenger in passengers:
+            pass
+        # Populate Stations
+
     def __str__(self):
         return f'RouteID:{self.RouteID}'
 
@@ -64,8 +106,8 @@ class Route(models.Model):
         db_table = 'Route'
 
 class RoutePassenger(models.Model):
-    Passenger = models.ForeignKey("Account", db_column="PassengerID", on_delete=models.PROTECT)
-    Route = models.ForeignKey("Route", db_column="RouteID", on_delete=models.PROTECT)
+    Passenger = models.ForeignKey("Account", db_column="PassengerID", on_delete=models.PROTECT, related_name="RoutePassengers")
+    Route = models.ForeignKey("Route", db_column="RouteID", on_delete=models.PROTECT, related_name="RoutePassengers")
     Request = models.ForeignKey("Request", db_column="RequestID", on_delete=models.PROTECT,
                                 related_name="+")
     On = models.ForeignKey("Station", db_column="On", on_delete=models.PROTECT, related_name="+")
@@ -79,8 +121,8 @@ class RoutePassenger(models.Model):
         db_table = 'RoutePassenger'
 
 class RouteStation(models.Model):
-    Route = models.ForeignKey("Route", db_column="RouteID", on_delete=models.CASCADE)
-    Station = models.ForeignKey("Station", db_column="StationID", on_delete=models.PROTECT)
+    Route = models.ForeignKey("Route", db_column="RouteID", on_delete=models.CASCADE, related_name="RouteStations")
+    Station = models.ForeignKey("Station", db_column="StationID", on_delete=models.PROTECT, related_name="+")
     Time = models.DateTimeField()
 
     def __str__(self):
@@ -96,6 +138,12 @@ class Station(models.Model):
 
     def __str__(self):
         return f'StationID:{self.StationID}'
+
+    def to_dict(self):
+        return {
+            "id": self.StationID,
+            "name": self.StationName
+        }
 
     class Meta:
         db_table = 'Station'
