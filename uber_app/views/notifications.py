@@ -39,7 +39,7 @@ class NotificationView(ProtectedView):
             else:
                 _notification = Notification.objects.filter(User=request.user.UserID,For=mode)
             
-            return JsonResponse(list(_notification), safe=False)
+            return JsonResponse(list(_notification.to_dict()), safe=False)
         except:
             raise HttpResponseException(BadRequestResponse())
 
