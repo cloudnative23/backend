@@ -135,6 +135,8 @@ class RequestsIDAcceptView(ProtectedView):
                 _RoutePassenger.Off = _request.Off
                 _RoutePassenger.Work_Status = _request.Work_Status
                 _RoutePassenger.save()
+                _request.Status = "accept"
+                _request.save()
                 return HttpResponseNoContent()
             except:
                 raise HttpResponseException(BadRequestResponse())
