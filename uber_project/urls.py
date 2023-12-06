@@ -19,6 +19,7 @@ from uber_app.views.users import *
 from uber_app.views.stations import *
 from uber_app.views.routes import *
 from uber_app.views.requests import *
+from uber_app.views.notifications import *
 
 urlpatterns = [
     path("me", UsersView.as_view()),
@@ -31,5 +32,9 @@ urlpatterns = [
     path("requests", RequestsView.as_view()),
     path("requests/<int:id>", RequestsIDView.as_view()),
     path("requests/<int:id>/accept", RequestsIDAcceptView.as_view()),
-    path("requests/<int:id>/deny", RequestsIDDenyView.as_view())
+    path("requests/<int:id>/deny", RequestsIDDenyView.as_view()),
+    path("notifications", NotificationView.as_view()),
+    path("notifications/read", NotificationView.as_view()),
+    path("notifications/<int:id>", NotificationIDView.as_view()),
+    path("notifications/<int:id>/read", NotificationIDView.as_view())
 ]

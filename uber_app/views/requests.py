@@ -123,7 +123,6 @@ class RequestsIDAcceptView(ProtectedView):
                 raise ValueError()
             try:
                 _request = Request.objects.get(pk=id)
-                return HttpResponseNoContent()
             except:
                 raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的Request。", 404))
             try:

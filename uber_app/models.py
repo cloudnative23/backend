@@ -190,3 +190,28 @@ class Station(models.Model):
 
     class Meta:
         db_table = 'Station'
+
+class Notification(models.Model):
+    NotificationID = models.BigAutoField(primary_key=True)
+    User = models.ForeignKey("Account", db_column="UserID", on_delete=models.PROTECT,related_name="Notification_Users")
+    Read = models.BooleanField(default=False)
+    For = models.TextField()
+    Category = models.TextField()
+    Route = models.ForeignKey("Route", db_column="RouteID", on_delete=models.PROTECT, related_name="Notifications")
+    Request = models.ForeignKey("Request", db_column="RequestID", on_delete=models.PROTECT,related_name="+")
+
+    def __str__(self):
+        return f'NotificationID:{self.NotificationID}'
+    
+    class Meta:
+        db_table = 'Notification'
+    
+    def to_dict(self):
+        return {
+            "id": self.NotificationID,
+            "read": self.Read,
+            "for": self.For,
+            "category": self.Category,
+            "route": self.Route.to_dict(),
+            "request": self.request.to_dict(),
+        }
