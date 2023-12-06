@@ -42,7 +42,7 @@ class Request(models.Model):
     Route = models.ForeignKey("Route", db_column="RouteID", on_delete=models.PROTECT, related_name="Requests")
     On = models.ForeignKey("Station", db_column="On", on_delete=models.PROTECT, related_name="+")
     Off = models.ForeignKey("Station", db_column="Off", on_delete=models.PROTECT, related_name="+")
-    Status = models.BooleanField(default=True)
+    Status = models.TextField(default="new")
     Work_Status = models.BooleanField(default=True)
     Date = models.DateField()
 
@@ -55,6 +55,7 @@ class Request(models.Model):
             "status": self.Status,
             "date": self.Date,
             "workStatus": self.Work_Status,
+            "passenger": self.Passenger.to_dict(),
             "route": self.Route.to_dict()
         }
 

@@ -18,6 +18,7 @@ from django.urls import path
 from uber_app.views.users import *
 from uber_app.views.stations import *
 from uber_app.views.routes import *
+from uber_app.views.requests import *
 
 urlpatterns = [
     path("me", UsersView.as_view()),
@@ -26,5 +27,7 @@ urlpatterns = [
     path("stations", StationsView.as_view()),
     path("stations/<int:id>", StationsIdView.as_view()),
     path("routes", RoutesView.as_view()),
-    path("routes/<int:id>", RoutesIDView.as_view())
+    path("routes/<int:id>", RoutesIDView.as_view()),
+    path("requests", RequestsView.as_view()),
+    path("requests/<int:id>", RequestsIDView.as_view())
 ]
