@@ -38,8 +38,10 @@ class NotificationView(ProtectedView):
                 _notification = Notification.objects.filter(User=request.user.UserID)
             else:
                 _notification = Notification.objects.filter(User=request.user.UserID,For=mode)
-            
-            return JsonResponse(list(_notification.to_dict()), safe=False)
+            res = []
+            for no in _notification:
+                res.append(no.to_dict())
+            return JsonResponse(res, safe=False)
         except:
             raise HttpResponseException(BadRequestResponse())
 
