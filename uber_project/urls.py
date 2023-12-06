@@ -29,5 +29,7 @@ urlpatterns = [
     path("routes", RoutesView.as_view()),
     path("routes/<int:id>", RoutesIDView.as_view()),
     path("requests", RequestsView.as_view()),
-    path("requests/<int:id>", RequestsIDView.as_view())
+    path("requests/<int:id>", RequestsIDView.as_view()),
+    path("requests/<int:id>/accept", RequestsIDAcceptView.as_view()),
+    path("requests/<int:id>/deny", RequestsIDDenyView.as_view())
 ]

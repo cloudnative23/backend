@@ -38,8 +38,8 @@ class RequestsView(ProtectedView):
         return (d['Date'], d['Work_Status'])
 
     # Post New Request
-    @transaction.atomic# not sure
-    @method_decorator(json_api)# not sure
+    @transaction.atomic
+    @method_decorator(json_api)
     def post(self, request):
         body = copy.deepcopy(request.json)
         try:
@@ -79,6 +79,7 @@ class RequestsView(ProtectedView):
             raise HttpResponseException(BadRequestResponse())
 
 class RequestsIDView(ProtectedView):
+    @method_decorator(json_api)
     def get(self,request,id):
         body = copy.deepcopy(request.json)
         try:
@@ -92,6 +93,8 @@ class RequestsIDView(ProtectedView):
         except:
             raise HttpResponseException(BadRequestResponse())
 
+    @transaction.atomic
+    @method_decorator(json_api)
     def delete(self,request,id):
         body = copy.deepcopy(request.json)
         try:
@@ -106,5 +109,52 @@ class RequestsIDView(ProtectedView):
             _request.Status = 'deleted'
             _request.save()
             return HttpResponseNoContent()
+        except:
+            raise HttpResponseException(BadRequestResponse())
+    
+class RequestsIDAcceptView(ProtectedView):
+    @transaction.atomic
+    @method_decorator(json_api)
+    def put(self,request,id):
+        body = copy.deepcopy(request.json)
+        user_id = request.user.UserID
+        try:
+            if not isinstance(body["id"], int):
+                raise ValueError()
+            try:
+                _request = Request.objects.get(pk=id)
+                return HttpResponseNoContent()
+            except:
+                raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的Request。", 404))
+            try:
+                _RoutePassenger = RoutePassenger()
+                _RoutePassenger.Passenger = user_id
+                _RoutePassenger.Route = _request.Route
+                _RoutePassenger.Request = _request.RequestID
+                _RoutePassenger.On = _request.On
+                _RoutePassenger.Off = _request.Off
+                _RoutePassenger.Work_Status = _request.Work_Status
+                _RoutePassenger.save()
+                return HttpResponseNoContent()
+            except:
+                raise HttpResponseException(BadRequestResponse())
+        except:
+            raise HttpResponseException(BadRequestResponse())
+
+class RequestsIDDenyView(ProtectedView):
+    @transaction.atomic
+    @method_decorator(json_api)
+    def put(self,request,id):
+        body = copy.deepcopy(request.json)
+        try:
+            if not isinstance(body["id"], int):
+                raise ValueError()
+            try:
+                _request = Request.objects.get(pk=id)
+                _request.Status = "deny"
+                _request.save()
+                return HttpResponseNoContent()
+            except:
+                raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的Request。", 404))
         except:
             raise HttpResponseException(BadRequestResponse())
