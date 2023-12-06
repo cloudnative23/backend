@@ -1,4 +1,5 @@
 from django.db import models
+from datetime import date, datetime
 
 # Create your models here.
 class Account(models.Model):
@@ -75,29 +76,70 @@ class Route(models.Model):
                                       through="RouteStation",
                                       through_fields=("Route", "Station"),
                                       related_name="+")
-    Car_Color = models.TextField()
-    Car_Capacity = models.IntegerField()
-    LicensePlateNumber = models.TextField()
+    Car_Model = models.TextField(default="")
+    Car_Color = models.TextField(default="")
+    Car_Capacity = models.IntegerField(default="")
+    LicensePlateNumber = models.TextField(default="")
 
-    def to_dict(self, detail=True, uid=None):
-        is_driver=self.Driver.UserID == uid
+    def update_status(self):
+        if self.Status == "deleted":
+            return False
+        if self.Date < date.today():
+            self.Status = "expired"
+            return True
+        # Check each stations
+        for entry in self.RouteStations.all():
+            if entry.Time < datetime.now():
+                self.Status = "expired"
+                return True
+        return False
+
+    def to_dict(self, uid=None):
         result = {
             "id": self.RouteID,
             "status": self.Status,
             "date": self.Date,
-            "workStatus": self.Work_Status,
-            "driver": self.Driver.to_dict(contact=detail),
+            "driver": self.Driver.to_dict(contact=True),
+            "n-passengers": self.RoutePassengers.count(),
             "carInfo": {
+                "model": self.Car_Model,
                 "color": self.Car_Color,
                 "capacity": self.Car_Capacity,
                 "licensePlateNumber": self.LicensePlateNumber
             }
         }
+
+        if self.Driver.UserID == uid:
+            result['workStatus'] = self.Work_Status
+
         # Populate Passengers
-        passengers = self.Passengers
-        for passenger in passengers:
-            pass
+        passengers = list()
+        stations = list()
+        on_passengers = dict()
+        off_passengers = dict()
+
+        for entry in self.RoutePassengers.all():
+            passengers.append(entry.Passenger.to_dict())
+            on_passengers[entry.On.StationID]=entry.Passenger.UserID
+            off_passengers[entry.Off.StationID]=entry.Passenger.UserID
+            if entry.Passenger.UserID == uid:
+                result.update({
+                    'workStatus': entry.Work_Status,
+                    'on-station': entry.On.to_dict(),
+                    'off-station': entry.Off.to_dict()
+                })
+        result['passengers'] = passengers
+
         # Populate Stations
+        for entry in self.RouteStations.all():
+            station = entry.Station.to_dict()
+            station['datetime'] = entry.Time.isoformat()
+            station['on-passengers'] = on_passengers.get(entry.Station.StationID, [])
+            station['off-passengers'] = off_passengers.get(entry.Station.StationID, [])
+            stations.append(station)
+
+        result['stations'] = stations
+        return result
 
     def __str__(self):
         return f'RouteID:{self.RouteID}'

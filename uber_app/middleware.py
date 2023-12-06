@@ -1,4 +1,5 @@
 from uber_app.models import Account
+from uber_app.views.base import HttpResponseException
 
 class UserMiddleware:
     def __init__(self, get_response):
@@ -24,3 +25,13 @@ class UserMiddleware:
         # the view is called.
 
         return response
+
+class ExceptionHandleMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        try:
+            return self.get_response(request)
+        except HttpResponseException as e:
+            return e.response

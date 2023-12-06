@@ -47,6 +47,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'uber_app.middleware.UserMiddleware',
+    'uber_app.middleware.ExceptionHandleMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 

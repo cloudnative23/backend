@@ -4,6 +4,11 @@ import json
 from datetime import datetime, date
 from functools import wraps
 
+class HttpResponseException(BaseException):
+    response=None
+    def __init__(self, response):
+        self.response=response
+
 class HttpResponseNoContent(HttpResponse):
     status_code = 204
 
@@ -40,8 +45,11 @@ def json_api(view_func):
 
 def datetime_from_str(dt):
     if dt == "today":
-        return datetime.fromisoformat(date.today().isoformat())
+        return date.today()
     elif dt == "now":
         return datetime.now()
     else:
-        return datetime.fromisoformat(dt)
+        try:
+            return date.fromisoformat(dt)
+        except ValueError:
+            return datetime.fromisoformat(dt)

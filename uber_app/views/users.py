@@ -1,5 +1,5 @@
 from uber_app.models import Account
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from uber_app.views.base import *
 from django.contrib.auth.hashers import check_password
 from django.utils.decorators import method_decorator
