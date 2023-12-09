@@ -4,10 +4,17 @@ from uber_app.views.base import *
 from django.utils.decorators import method_decorator
 from datetime import date, datetime
 from django.db import transaction
-from django.db import models
+from django.db.models import *
 import copy
 
 class RoutesView(ProtectedView):
+    def available(self, request):
+        pass
+    def attending(self, request):
+        pass
+    def driving(self, request):
+        pass
+
     def get(self, request):
         try:
             mode = request.GET["mode"]
@@ -29,19 +36,23 @@ class RoutesView(ProtectedView):
         if _to := request.GET.get("to", None):
             _to = datetime_from_str(_to)
             if isinstance(_to, date):
-                query = query.filter(RouteStations__Time__date__gte=_to)
+                query = query.filter(RouteStations__Time__date__lt=_to)
             else:
-                query = query.filter(RouteStations__Time__gte=_to)
+                query = query.filter(RouteStations__Time__lt=_to)
         if mode == "attending":
-            query.filter(Passengers__UserID=request.user.UserID)
+            query = query.filter(Passengers__UserID=request.user.UserID)
         elif mode == "driving":
-            query.filter(Driver__UserID=request.user.UserID)
-        query = query.distinct("RouteID")
+            query = query.filter(Driver=request.user.UserID)
+        else:
+            query = query.filter(RouteStations__Time__gte=datetime.now()).filter(Status="available")
+        query = query.distinct()
         query = query.prefetch_related("RoutePassengers", "Passengers")
         result = []
         for route in query:
             if route.update_status():
                 route.save()
+            if mode == "available" and route.Status != "available":
+                continue
             result.append(route.to_dict(uid=request.user.UserID))
         return JsonResponse(result, safe=False)
 
@@ -75,7 +86,7 @@ class RoutesView(ProtectedView):
                                  Driver__UserID=request.user.UserID,
                                  Date=body["date"],
                                  Work_Status=body["workStatus"]).count():
-                workStatus = "上班" if body["workStatus"] else "下班" 
+                workStatus = "上班" if body["workStatus"] else "下班"
                 raise HttpResponseException(ErrorResponse(f"{body['date']} 已有{workStatus}的行程", 400))
             route = Route()
             route.Date = body["date"]
@@ -124,3 +135,19 @@ class RoutesIDView(ProtectedView):
         except Route.DoesNotExist:
             raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的行程", 404))
         return HttpResponseNoContent()
+
+class RoutesIDStationsView(ProtectedView):
+    def get(self, id):
+        try:
+            route = Route.objects.exclude(Status="deleted").get(pk=id)
+        except Route.DoesNotExist:
+            return ErrorResponse(f"找不到 ID 為 {id} 的行程", 404)
+        return JsonResponse(route.to_dict()['stations'], safe=False)
+
+class RoutesIDStationsIDView(ProtectedView):
+    def get(self, id, station_id):
+        pass
+    def put(self, id, station_id):
+        pass
+    def delete(self, id, station_id):
+        pass

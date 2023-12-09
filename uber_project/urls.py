@@ -34,7 +34,7 @@ urlpatterns = [
     path("requests/<int:id>/accept", RequestsIDAcceptView.as_view()),
     path("requests/<int:id>/deny", RequestsIDDenyView.as_view()),
     path("notifications", NotificationView.as_view()),
-    path("notifications/read", NotificationView.as_view()),
+    path("notifications/read", NotificationReadView.as_view()),
     path("notifications/<int:id>", NotificationIDView.as_view()),
-    path("notifications/<int:id>/read", NotificationIDView.as_view())
+    path("notifications/<int:id>/read", NotificationIDReadView.as_view())
 ]

@@ -27,7 +27,7 @@ class NotificationReadView(ProtectedView):
         mode = request.GET.get("mode", "all")
         if mode not in ["all", "passenger", "driver"]:
             return BadRequestResponse()
-        user = Request.user
+        user = request.user
         if mode == "driver" or mode == "all":
             user.Driver_Notification_Count = 0
             user.save(update_fields=["Driver_Notification_Count"])
