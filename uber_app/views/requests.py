@@ -7,7 +7,6 @@ from django.db import transaction
 from django.db import models
 import copy
 
-
 # /requests
 class RequestsView(ProtectedView):
     # Get All Requests
@@ -24,18 +23,12 @@ class RequestsView(ProtectedView):
         else:
             query = query.filter(Route__Driver=request.user.UserID)
         try:
-            query = query.filter(Status="new")
-            result = []
-            #TODO 排序日期 上下班
-            # Produce the response
-            for _request in query:
-                result.append(_request.to_dict())
-            result = sorted(result,key=sort_by_date_and_status,reverse=True if body['order-mode'] == 'desc' else False)
+            # 前端會進行 Filter
+            query.order_by("Date", "-Work_Status")
+            result = [_request.to_dict() for _request in query]
             return JsonResponse(result, safe=False)
         except:
             raise HttpResponseException(BadRequestResponse())
-    def sort_by_date_and_status(self,d):
-        return (d['Date'], d['Work_Status'])
 
     # Post New Request
     @transaction.atomic
@@ -56,10 +49,18 @@ class RequestsView(ProtectedView):
             if not isinstance(body["off-station"], int):
                 raise ValueError()
             try:
-                on = Station.objects.get(StationID=body["on-station"], Enable=True)# not sure
-                off = Station.objects.get(StationID=body["off-station"], Enable=True)# not sure
+                on = Station.objects.get(StationID=body["on-station"], Enable=True)
+                off = Station.objects.get(StationID=body["off-station"], Enable=True)
             except Station.DoesNotExist:
-                raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的站點。", 404))
+                raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的站點", 404))
+            try:
+                route=Route.objects.get(pk=body["route"])
+            except Route.DoesNotExist:
+                raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的路線", 404))
+            if route.update_status():
+                route.save()
+            if route.Status != "available":
+                raise HttpResponseException(ErrorResponse(f"此路線不再接受乘客", 403))
             _request=Request()
             _request.Passenger=request.user
             _request.Route=Route.objects.get(pk=body["route"])
@@ -69,93 +70,64 @@ class RequestsView(ProtectedView):
             _request.Status="new"
             _request.Date=date.today()
             _request.save()
-            res = {}
-            res['id'] = request.user.UserID
-            res['status'] = "new"
-            res['date'] = str(date.today())
-            res['workStatus'] = body["workStatus"]
             return JsonResponse(_request.to_dict())
         except (KeyError, ValueError):
             raise HttpResponseException(BadRequestResponse())
 
 class RequestsIDView(ProtectedView):
-    @method_decorator(json_api)
     def get(self,request,id):
-        body = copy.deepcopy(request.json)
         try:
-            if not isinstance(body["id"], int):
-                raise ValueError()
-            try:
-                _request = Request.objects.get(pk=id)
-            except:
-                raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的Request。", 404))
-            return JsonResponse(_request.to_dict())
-        except:
-            raise HttpResponseException(BadRequestResponse())
+            _request = Request.objects.get(pk=id)
+        except Request.DoesNotExist:
+            raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 請求", 404))
+        return JsonResponse(_request.to_dict())
 
     @transaction.atomic
-    @method_decorator(json_api)
     def delete(self,request,id):
-        body = copy.deepcopy(request.json)
         try:
-            if not isinstance(body["id"], int):
-                raise ValueError()
-            try:
-                _request = Request.objects.get(pk=id)
-            except:
-                raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的Request。", 404))
-            if _request.Passenger != request.user.UserID:
-                raise HttpResponseException(ErrorResponse(f"權限錯誤", 400))
-            _request.Status = 'deleted'
+            _request = Request.objects.get(pk=id)
+            if _request.Passenger.UserID != request.user.UserID:
+                raise HttpResponseException(ErrorResponse(f"您沒有權限刪除此請求", 403))
+            _request.Status = "deleted"
             _request.save()
-            return HttpResponseNoContent()
-        except:
-            raise HttpResponseException(BadRequestResponse())
-    
+        except Request.DoesNotExist:
+            raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的請求", 404))
+        return HttpResponseNoContent()
+
 class RequestsIDAcceptView(ProtectedView):
     @transaction.atomic
-    @method_decorator(json_api)
     def put(self,request,id):
-        body = copy.deepcopy(request.json)
-        user_id = request.user.UserID
         try:
-            if not isinstance(body["id"], int):
-                raise ValueError()
-            try:
-                _request = Request.objects.get(pk=id)
-            except:
-                raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的Request。", 404))
-            try:
-                _RoutePassenger = RoutePassenger()
-                _RoutePassenger.Passenger = user_id
-                _RoutePassenger.Route = _request.Route
-                _RoutePassenger.Request = _request.RequestID
-                _RoutePassenger.On = _request.On
-                _RoutePassenger.Off = _request.Off
-                _RoutePassenger.Work_Status = _request.Work_Status
-                _RoutePassenger.save()
-                _request.Status = "accept"
-                _request.save()
-                return HttpResponseNoContent()
-            except:
-                raise HttpResponseException(BadRequestResponse())
-        except:
-            raise HttpResponseException(BadRequestResponse())
+            _request = Request.objects.get(pk=id)
+        except Request.DoesNotExist:
+            raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的請求", 404))
+        if _request.Status != "new":
+            raise HttpResponseException(ErrorResponse("此請求已失效", 400))
+        if _request.Route.Driver.UserID != request.user.UserID:
+            raise HttpResponseException(ErrorResponse("您沒有權限接受此請求", 403))
+        _RoutePassenger = RoutePassenger()
+        _RoutePassenger.Passenger = _request.Passenger
+        _RoutePassenger.Route = _request.Route
+        _RoutePassenger.Request = _request
+        _RoutePassenger.On = _request.On
+        _RoutePassenger.Off = _request.Off
+        _RoutePassenger.Work_Status = _request.Work_Status
+        _RoutePassenger.save()
+        _request.Status = "accepted"
+        _request.save()
+        return HttpResponseNoContent()
 
 class RequestsIDDenyView(ProtectedView):
     @transaction.atomic
-    @method_decorator(json_api)
     def put(self,request,id):
-        body = copy.deepcopy(request.json)
         try:
-            if not isinstance(body["id"], int):
-                raise ValueError()
-            try:
-                _request = Request.objects.get(pk=id)
-                _request.Status = "deny"
-                _request.save()
-                return HttpResponseNoContent()
-            except:
-                raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的Request。", 404))
-        except:
-            raise HttpResponseException(BadRequestResponse())
+            _request = Request.objects.get(pk=id)
+            if _request.Status != "new":
+                raise HttpResponseException(ErrorResponse("此請求已失效", 400))
+            if _request.Route.Driver.UserID != request.user.UserID:
+                raise HttpResponseException(ErrorResponse("您沒有權限接受此請求", 403))
+            _request.Status = "denied"
+            _request.save()
+            return HttpResponseNoContent()
+        except Request.DoesNotExist:
+            raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的請求", 404))

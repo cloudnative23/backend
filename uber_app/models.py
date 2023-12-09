@@ -45,6 +45,7 @@ class Request(models.Model):
     Status = models.TextField(default="new")
     Work_Status = models.BooleanField(default=True)
     Date = models.DateField()
+    Timestamp = models.DateTimeField(default=datetime.now)
 
     def __str__(self):
         return f'RequestID:{self.RequestID}'
@@ -53,10 +54,11 @@ class Request(models.Model):
         return {
             "id": self.RequestID,
             "status": self.Status,
-            "date": self.Date,
+            "timestamp": self.Timestamp.isoformat(),
+            "date": self.Date.isoformat(),
             "workStatus": self.Work_Status,
             "passenger": self.Passenger.to_dict(),
-            "route": self.Route.to_dict()
+            "route": self.Route.to_dict(),
         }
 
     class Meta:
