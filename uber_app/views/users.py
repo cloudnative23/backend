@@ -1,4 +1,4 @@
-from uber_app.models import Account
+from uber_app.models import Account, Request, Route
 from django.http import JsonResponse
 from uber_app.views.base import *
 from django.contrib.auth.hashers import check_password
@@ -8,12 +8,22 @@ from django.utils.decorators import method_decorator
 class UsersView(ProtectedView):
     def get(self, request):
         user: Account = request.user
+        driver_req_count = Request.objects.filter(Route__Driver=user.UserID).count()
+        passenger_req_count = Request.objects.filter(PassengerID=user.UserID).count()
         return JsonResponse({
             'id': user.UserID,
             'name': user.Name,
             'avatar': user.Avatar,
             'email': user.Email,
-            'phone': user.Phone
+            'phone': user.Phone,
+            'notificationCount': {
+                'driver': user.Driver_Notification_Count,
+                'passenger': user.Passenger_Notification_Count
+            },
+            'requestCount':{
+                'driver': driver_req_count,
+                'passenger': passenger_req_count
+            }
         })
 
 class LoginView(BaseView):
