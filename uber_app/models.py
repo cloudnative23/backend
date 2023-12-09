@@ -9,6 +9,8 @@ class Account(models.Model):
     Password = models.TextField(default="")
     Avatar = models.URLField(default="")
     Phone = models.TextField(default="")
+    Passenger_Notification_Count = models.IntegerField(default=0)
+    Driver_Notification_Count = models.IntegerField(default=0)
 
     def get_full_name(self) -> str:
         return self.Name
@@ -199,15 +201,16 @@ class Notification(models.Model):
     Read = models.BooleanField(default=False)
     For = models.TextField()
     Category = models.TextField()
-    Route = models.ForeignKey("Route", db_column="RouteID", on_delete=models.PROTECT, related_name="Notifications")
-    Request = models.ForeignKey("Request", db_column="RequestID", on_delete=models.PROTECT,related_name="+")
+    Route = models.ForeignKey("Route", db_column="RouteID", on_delete=models.PROTECT, related_name="+", null=True)
+    Request = models.ForeignKey("Request", db_column="RequestID", on_delete=models.PROTECT,related_name="+", null=True)
+    Timestamp = models.DateTimeField(default=datetime.now)
 
     def __str__(self):
         return f'NotificationID:{self.NotificationID}'
-    
+
     class Meta:
         db_table = 'Notification'
-    
+
     def to_dict(self):
         return {
             "id": self.NotificationID,
