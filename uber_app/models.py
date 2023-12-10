@@ -42,8 +42,8 @@ class Request(models.Model):
     Passenger = models.ForeignKey("Account", db_column="PassengerID", on_delete=models.PROTECT,
                                   related_name="Requests")
     Route = models.ForeignKey("Route", db_column="RouteID", on_delete=models.PROTECT, related_name="Requests")
-    On = models.ForeignKey("Station", db_column="On", on_delete=models.PROTECT, related_name="+")
-    Off = models.ForeignKey("Station", db_column="Off", on_delete=models.PROTECT, related_name="+")
+    On = models.ForeignKey("RouteStation", db_column="On", on_delete=models.PROTECT, related_name="+")
+    Off = models.ForeignKey("RouteStation", db_column="Off", on_delete=models.PROTECT, related_name="+")
     Status = models.TextField(default="new")
     Work_Status = models.BooleanField(default=True)
     Date = models.DateField()
@@ -55,12 +55,14 @@ class Request(models.Model):
     def to_dict(self):
         return {
             "id": self.RequestID,
+            "passenger": self.Passenger.to_dict(),
             "status": self.Status,
             "timestamp": self.Timestamp.isoformat(),
             "date": self.Date.isoformat(),
             "workStatus": self.Work_Status,
-            "passenger": self.Passenger.to_dict(),
-            "route": self.Route.to_dict(),
+            "on-station": self.On.Station.to_dict(),
+            "off-station": self.Off.Station.to_dict(),
+            "route": self.Route.to_dict()
         }
 
     class Meta:
@@ -87,12 +89,11 @@ class Route(models.Model):
     LicensePlateNumber = models.TextField(default="")
 
     def update_status(self):
-        if self.Status == "deleted":
+        if self.Status != "available":
             return False
         if self.Date < date.today():
             self.Status = "expired"
             return True
-        # Check each stations
         for entry in self.RouteStations.all():
             if entry.Time < datetime.now():
                 self.Status = "expired"
@@ -125,13 +126,13 @@ class Route(models.Model):
 
         for entry in self.RoutePassengers.all():
             passengers.append(entry.Passenger.to_dict())
-            on_passengers[entry.On.StationID]=entry.Passenger.UserID
-            off_passengers[entry.Off.StationID]=entry.Passenger.UserID
-            if entry.Passenger.UserID == uid:
+            on_passengers[entry.On.Station_id]=entry.Passenger_id
+            off_passengers[entry.Off.Station_id]=entry.Passenger_id
+            if entry.Passenger_id == uid:
                 result.update({
                     'workStatus': entry.Work_Status,
-                    'on-station': entry.On.to_dict(),
-                    'off-station': entry.Off.to_dict()
+                    'on-station': entry.On.Station.to_dict(),
+                    'off-station': entry.Off.Station.to_dict()
                 })
         result['passengers'] = passengers
 
@@ -139,8 +140,8 @@ class Route(models.Model):
         for entry in self.RouteStations.all():
             station = entry.Station.to_dict()
             station['datetime'] = entry.Time.isoformat()
-            station['on-passengers'] = on_passengers.get(entry.Station.StationID, [])
-            station['off-passengers'] = off_passengers.get(entry.Station.StationID, [])
+            station['on-passengers'] = list(entry.OnPassengers.values_list("Passenger_id", flat=True))
+            station['off-passengers'] = list(entry.OffPassengers.values_list("Passenger_id", flat=True))
             stations.append(station)
 
         result['stations'] = stations
@@ -158,8 +159,8 @@ class RoutePassenger(models.Model):
     Route = models.ForeignKey("Route", db_column="RouteID", on_delete=models.PROTECT, related_name="RoutePassengers")
     Request = models.ForeignKey("Request", db_column="RequestID", on_delete=models.PROTECT,
                                 related_name="+")
-    On = models.ForeignKey("Station", db_column="On", on_delete=models.PROTECT, related_name="+")
-    Off = models.ForeignKey("Station", db_column="Off", on_delete=models.PROTECT, related_name="+")
+    On = models.ForeignKey("RouteStation", db_column="On", on_delete=models.PROTECT, related_name="OnPassengers")
+    Off = models.ForeignKey("RouteStation", db_column="Off", on_delete=models.PROTECT, related_name="OffPassengers")
     Work_Status = models.BooleanField(default=True)
 
     def __str__(self):
@@ -176,6 +177,15 @@ class RouteStation(models.Model):
 
     def __str__(self):
         return f'RouteID:{self.Route.RouteID}'
+
+    def to_dict(self):
+        result = self.Station.to_dict()
+        result.update({
+            "datetime": self.Time.isoformat(),
+            "on-passengers": [entry.Passenger_id for entry in self.OnPassengers],
+            "off-passengers": [entry.Passenger_id for entry in self.OffPassengers]
+        })
+        return result
 
     class Meta:
         db_table = 'RouteStation'
@@ -214,11 +224,11 @@ class Notification(models.Model):
         db_table = 'Notification'
 
     def to_dict(self):
+        # Currently, we don't implement notifications related to routes
         return {
             "id": self.NotificationID,
             "read": self.Read,
             "for": self.For,
             "category": self.Category,
-            "route": self.Route.to_dict(),
             "request": self.request.to_dict(),
         }

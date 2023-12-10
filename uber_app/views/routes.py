@@ -19,7 +19,7 @@ class RoutesView(ProtectedView):
         query = query.distinct()
         query = query.order_by(["Date", "-Work_Status"])
         if n > 0:
-            result = query[:n].list()
+            result = list(query[:n])
         return JsonResponse(result, safe=False)
 
     def passenger(self, user, n, history=False):
@@ -72,7 +72,7 @@ class RoutesView(ProtectedView):
                 raise ValueError()
             # Check conflict
             if Route.objects.exclude(Status="deleted").filter(
-                                 Driver__UserID=request.user.UserID,
+                                 Driver=request.user.UserID,
                                  Date=body["date"],
                                  Work_Status=body["workStatus"]).count():
                 workStatus = "上班" if body["workStatus"] else "下班"

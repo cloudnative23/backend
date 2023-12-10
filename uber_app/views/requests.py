@@ -49,18 +49,20 @@ class RequestsView(ProtectedView):
             if not isinstance(body["off-station"], int):
                 raise ValueError()
             try:
-                on = Station.objects.get(StationID=body["on-station"], Enable=True)
-                off = Station.objects.get(StationID=body["off-station"], Enable=True)
-            except Station.DoesNotExist:
-                raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的站點", 404))
-            try:
                 route=Route.objects.get(pk=body["route"])
             except Route.DoesNotExist:
                 raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的路線", 404))
+            try:
+                on = route.RouteStations.get(Station=body["on-station"])
+                off = route.RouteStations.get(Station=body["off-station"])
+            except RouteStation.DoesNotExist:
+                raise HttpResponseException(ErrorResponse(f"停靠站 {id} 不在路線上", 404))
+            if off.Time < on.Time:
+                raise HttpResponseException(ErrorResponse("上車站點的停靠時間為下車站點後面", 400))
             if route.update_status():
                 route.save()
             if route.Status != "available":
-                raise HttpResponseException(ErrorResponse(f"此路線不再接受乘客", 403))
+                raise HttpResponseException(ErrorResponse("此路線不再接受乘客", 403))
             _request=Request()
             _request.Passenger=request.user
             _request.Route=Route.objects.get(pk=body["route"])
@@ -103,7 +105,7 @@ class RequestsIDAcceptView(ProtectedView):
             raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的請求", 404))
         if _request.Status != "new":
             raise HttpResponseException(ErrorResponse("此請求已失效", 400))
-        if _request.Route.Driver.UserID != request.user.UserID:
+        if _request.Route.Driver_id != request.user.UserID:
             raise HttpResponseException(ErrorResponse("您沒有權限接受此請求", 403))
         _RoutePassenger = RoutePassenger()
         _RoutePassenger.Passenger = _request.Passenger
