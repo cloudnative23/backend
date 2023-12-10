@@ -37,6 +37,7 @@ LOGIN_URL = 'login/'
 
 INSTALLED_APPS = [
     'django.contrib.staticfiles',
+    'django_extensions',
     'uber_app',
     "corsheaders",
 ]
