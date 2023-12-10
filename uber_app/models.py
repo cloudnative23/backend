@@ -153,6 +153,7 @@ class Route(models.Model):
         db_table = 'Route'
 
 class RoutePassenger(models.Model):
+    RoutePassengerID = models.BigAutoField(primary_key=True)
     Passenger = models.ForeignKey("Account", db_column="PassengerID", on_delete=models.PROTECT, related_name="RoutePassengers")
     Route = models.ForeignKey("Route", db_column="RouteID", on_delete=models.PROTECT, related_name="RoutePassengers")
     Request = models.ForeignKey("Request", db_column="RequestID", on_delete=models.PROTECT,
@@ -168,6 +169,7 @@ class RoutePassenger(models.Model):
         db_table = 'RoutePassenger'
 
 class RouteStation(models.Model):
+    RouteStationID = models.BigAutoField(primary_key=True)
     Route = models.ForeignKey("Route", db_column="RouteID", on_delete=models.CASCADE, related_name="RouteStations")
     Station = models.ForeignKey("Station", db_column="StationID", on_delete=models.PROTECT, related_name="+")
     Time = models.DateTimeField()
