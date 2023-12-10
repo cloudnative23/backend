@@ -8,53 +8,42 @@ from django.db.models import *
 import copy
 
 class RoutesView(ProtectedView):
-    def available(self, request):
+    def search(self, request, n):
         pass
-    def attending(self, request):
-        pass
-    def driving(self, request):
+    def driver(self, user, n, history=False):
+        query = Route.objects.filter(Driver=user.UserID)
+        if history:
+            query = query.exclude(RouteStations__Time__gte=datetime.now())
+        else:
+            query = query.filter(RouteStations__Time__gte=datetime.now())
+        query = query.distinct()
+        query = query.order_by(["Date", "-Work_Status"])
+        if n > 0:
+            result = query[:n].list()
+        return JsonResponse(result, safe=False)
+
+    def passenger(self, user, n, history=False):
         pass
 
     def get(self, request):
         try:
             mode = request.GET["mode"]
-            if mode not in ["available", "attending", "driving"]:
+            if mode not in ["search", "driver-future", "driver-history",
+                            "passenger-future", "passenger-history"]:
                 raise ValueError()
-            order_by = request.GET.get("order-by", "datetime")
-            if order_by not in ["datetime", "similiarity"]:
-                raise ValueError()
+            n = int(request.GET.get("n", 0))
         except (KeyError, ValueError):
             return BadRequestResponse()
-        query = Route.objects.exclude(Status="deleted")
-        # Add filters
-        if _from := request.GET.get("from", None):
-            _from = datetime_from_str(_from)
-            if isinstance(_from, date):
-                query = query.filter(RouteStations__Time__date__gte=_from)
-            else:
-                query = query.filter(RouteStations__Time__gte=_from)
-        if _to := request.GET.get("to", None):
-            _to = datetime_from_str(_to)
-            if isinstance(_to, date):
-                query = query.filter(RouteStations__Time__date__lt=_to)
-            else:
-                query = query.filter(RouteStations__Time__lt=_to)
-        if mode == "attending":
-            query = query.filter(Passengers__UserID=request.user.UserID)
-        elif mode == "driving":
-            query = query.filter(Driver=request.user.UserID)
+        if mode == "driver-future":
+            return self.driver(request.user, n, False)
+        elif mode == "driver-history":
+            return self.driver(request.user, n, True)
+        elif mode == "passenger-future":
+            return self.passenger(request.user, n, False)
+        elif mode == "passenger-history":
+            return self.passenger(request.user, n, True)
         else:
-            query = query.filter(RouteStations__Time__gte=datetime.now()).filter(Status="available")
-        query = query.distinct()
-        query = query.prefetch_related("RoutePassengers", "Passengers")
-        result = []
-        for route in query:
-            if route.update_status():
-                route.save()
-            if mode == "available" and route.Status != "available":
-                continue
-            result.append(route.to_dict(uid=request.user.UserID))
-        return JsonResponse(result, safe=False)
+            return self.search(request, n)
 
     @transaction.atomic
     @method_decorator(json_api)

@@ -34,18 +34,14 @@ class LoginView(BaseView):
             password = request.json['password']
         except KeyError:
             return BadRequestResponse()
-
         if not isinstance(email, str) or not isinstance(password, str):
             return BadRequestResponse()
-
         try:
             user = Account.objects.get(Email=email)
         except Account.DoesNotExist:
             return ErrorResponse("E-mail 錯誤", 403)
-
         if not check_password(password, user.Password):
             return ErrorResponse("密碼錯誤", 403)
-
         request.session['user'] = user.UserID
         return HttpResponseNoContent()
 

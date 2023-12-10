@@ -4,10 +4,8 @@ from uber_app.views.base import *
 
 class StationsView(ProtectedView):
     def get(self, request):
-        stations = Station.objects.filter(Enable=True)
-        result = []
-        for station in stations:
-            result.append(station.to_dict())
+        stations = Station.objects.filter(Enable=True).order_by("StationID")
+        result = [station for station in stations]
         return JsonResponse(result, safe=False)
 
 class StationsIdView(ProtectedView):

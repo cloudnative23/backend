@@ -43,7 +43,7 @@ class NotificationIDView(ProtectedView):
             if _notification.User.UserID != request.user.UserID:
                 return ErrorResponse("您存取讀取此通知的權限", 403)
         except Notification.DoesNotExist:
-            return ErrorResponse(f"找不到 ID 為 {id} 的Notification。", 404)
+            return ErrorResponse(f"找不到 ID 為 {id} 的通知", 404)
         return JsonResponse(_notification.to_dict())
 
 class NotificationIDReadView(ProtectedView):
@@ -55,5 +55,5 @@ class NotificationIDReadView(ProtectedView):
             notification.Read=True
             notification.save()
         except Notification.DoesNotExist:
-            return ErrorResponse(f"找不到 ID 為 {id} 的Notification。", 404)
+            return ErrorResponse(f"找不到 ID 為 {id} 的通知", 404)
         return HttpResponseNoContent()
