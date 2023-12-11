@@ -137,7 +137,7 @@ class Route(models.Model):
         result['passengers'] = passengers
 
         # Populate Stations
-        for entry in self.RouteStations.all():
+        for entry in self.RouteStations.all().order_by("Time"):
             station = entry.Station.to_dict()
             station['datetime'] = entry.Time.isoformat()
             station['on-passengers'] = list(entry.OnPassengers.values_list("Passenger_id", flat=True))

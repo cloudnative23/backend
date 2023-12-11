@@ -9,21 +9,70 @@ import copy
 
 class RoutesView(ProtectedView):
     def search(self, request, n):
-        pass
+        now = datetime.now()
+        try:
+            on_station = int(request.GET["on-station"])
+            off_station = int(request.GET["off-station"])
+            on_datetime = datetime.fromisoformat(request.GET["on-datetime"])
+            off_datetime = datetime.fromisoformat(request.GET["off-datetime"])
+        except (KeyError, ValueError):
+            return BadRequestResponse()
+        if on_datetime.date() != off_datetime.date():
+            return ErrorResponse("上車和下車的日期不一致（目前不支援跨日乘車）", 400)
+        date = on_datetime.date()
+        query = Route.objects.filter(Date=date, Status="available").annotate(
+            on_station=FilteredRelation("RouteStations",
+                                        condition=Q(RouteStations__Station_id=on_station)),
+            off_station=FilteredRelation("RouteStations",
+                                         condition=Q(RouteStations__Station_id=off_station))
+        ).filter(on_station__isnull=False, off_station__isnull=False,
+                 on_station__Time__lt=F("off_station__Time"),
+                 on_station__Time__gte=on_datetime,
+                 off_station__Time__lte=off_datetime).annotate(
+            similiarity=(F("on_station__Time") - on_datetime) +
+                        (off_datetime - F("off_station__Time"))
+        ).order_by("similiarity")
+        if n > 0:
+            query = query[:n]
+        result = [route.to_dict() for route in query]
+        return JsonResponse(result, safe=False)
+
     def driver(self, user, n, history=False):
         query = Route.objects.filter(Driver=user.UserID)
+        now = datetime.now()
         if history:
-            query = query.exclude(RouteStations__Time__gte=datetime.now())
+            query = query.exclude(RouteStations__Time__gte=now)
         else:
-            query = query.filter(RouteStations__Time__gte=datetime.now())
+            query = query.filter(RouteStations__Time__gte=now)
         query = query.distinct()
-        query = query.order_by(["Date", "-Work_Status"])
+        query = query.order_by("Date", "-Work_Status")
+        if history:
+            query.reverse()
         if n > 0:
-            result = list(query[:n])
+            query = query[:n]
+        result = [route.to_dict(uid=user.UserID) for route in query]
         return JsonResponse(result, safe=False)
 
     def passenger(self, user, n, history=False):
-        pass
+        now = datetime.now()
+        query = Route.objects.annotate(
+            UserPassenger=FilteredRelation(
+                "RoutePassengers",
+                condition=Q(RoutePassengers__Passenger_id=user.UserID),
+            )
+        ).filter(UserPassenger__isnull=False)
+        condition = Q(UserPassenger__Off__Time__gte=now)
+        if history:
+            query = query.exclude(condition)
+        else:
+            query = query.filter(condition)
+        query.order_by("Date", "-UserPassenger__Work_Status")
+        if history:
+            query.reverse()
+        if n > 0:
+            query = query[:n]
+        result = [route.to_dict(uid=user.UserID) for route in query]
+        return JsonResponse(result, safe=False)
 
     def get(self, request):
         try:
