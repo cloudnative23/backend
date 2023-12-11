@@ -29,6 +29,8 @@ urlpatterns = [
     path("stations/<int:id>", StationsIdView.as_view()),
     path("routes", RoutesView.as_view()),
     path("routes/<int:id>", RoutesIDView.as_view()),
+    path("routes/<int:id>/stations", RoutesIDStationsView.as_view()),
+    path("routes/<int:id>/stations/<int:station_id>", RoutesIDStationsIDView.as_view()),
     path("requests", RequestsView.as_view()),
     path("requests/<int:id>", RequestsIDView.as_view()),
     path("requests/<int:id>/accept", RequestsIDAcceptView.as_view()),

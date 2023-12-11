@@ -36,16 +36,12 @@ class RequestsView(ProtectedView):
     def post(self, request):
         body = copy.deepcopy(request.json)
         try:
-            # Check workStatus
             if not isinstance(body["workStatus"], bool):
                 raise ValueError()
-            # Check CarInfo
             if not isinstance(body["route"], int):
                 raise ValueError()
-            #Check on-station
             if not isinstance(body["on-station"], int):
                 raise ValueError()
-            #Check off-station
             if not isinstance(body["off-station"], int):
                 raise ValueError()
             try:
@@ -53,12 +49,15 @@ class RequestsView(ProtectedView):
             except Route.DoesNotExist:
                 raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的路線", 404))
             try:
-                on = route.RouteStations.get(Station=body["on-station"])
-                off = route.RouteStations.get(Station=body["off-station"])
+                on = route.RouteStations.exclude(Status="deleted").get(Station=body["on-station"])
+                off = route.RouteStations.exclude(Status="deleted").get(Station=body["off-station"])
             except RouteStation.DoesNotExist:
                 raise HttpResponseException(ErrorResponse(f"停靠站 {id} 不在路線上", 404))
             if off.Time < on.Time:
                 raise HttpResponseException(ErrorResponse("上車站點的停靠時間為下車站點後面", 400))
+            if Request.objects.filter(Status="new").filter(
+                On=on, Off=off, Route=route, Passenger=request.user.UserID).exists():
+                raise HttpResponseException(ErrorResponse("已提出相同的請求，請求不能重複", 404))
             if route.update_status():
                 route.save()
             if route.Status != "available":

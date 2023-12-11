@@ -9,7 +9,6 @@ import copy
 
 class RoutesView(ProtectedView):
     def search(self, request, n):
-        now = datetime.now()
         try:
             on_station = int(request.GET["on-station"])
             off_station = int(request.GET["off-station"])
@@ -38,13 +37,12 @@ class RoutesView(ProtectedView):
         return JsonResponse(result, safe=False)
 
     def driver(self, user, n, history=False):
-        query = Route.objects.filter(Driver=user.UserID)
+        query = Route.objects.filter(Driver=user.UserID).exclude(Status="deleted")
         now = datetime.now()
         if history:
             query = query.exclude(RouteStations__Time__gte=now)
         else:
             query = query.filter(RouteStations__Time__gte=now)
-        query = query.distinct()
         query = query.order_by("Date", "-Work_Status")
         if history:
             query.reverse()
@@ -55,7 +53,7 @@ class RoutesView(ProtectedView):
 
     def passenger(self, user, n, history=False):
         now = datetime.now()
-        query = Route.objects.annotate(
+        query = Route.objects.exclude(Status="deleted").annotate(
             UserPassenger=FilteredRelation(
                 "RoutePassengers",
                 condition=Q(RoutePassengers__Passenger_id=user.UserID),
@@ -175,7 +173,7 @@ class RoutesIDView(ProtectedView):
         return HttpResponseNoContent()
 
 class RoutesIDStationsView(ProtectedView):
-    def get(self, id):
+    def get(self, request, id):
         try:
             route = Route.objects.exclude(Status="deleted").get(pk=id)
         except Route.DoesNotExist:
@@ -183,9 +181,59 @@ class RoutesIDStationsView(ProtectedView):
         return JsonResponse(route.to_dict()['stations'], safe=False)
 
 class RoutesIDStationsIDView(ProtectedView):
-    def get(self, id, station_id):
-        pass
-    def put(self, id, station_id):
-        pass
-    def delete(self, id, station_id):
-        pass
+    @transaction.atomic
+    def get(self, request, id, station_id):
+        if not Route.objects.exclude(Status="deleted").filter(pk=id).exists():
+            return ErrorResponse(f"找不到 ID 為 {id} 的行程", 404)
+        try:
+            route_station = RouteStation.objects.get(Route=id, Station=station_id)
+        except RouteStation.DoesNotExist:
+            return ErrorResponse("在行程中找不到站點", 403)
+        return JsonResponse(route_station.to_dict())
+
+    @transaction.atomic
+    @method_decorator(json_api)
+    def put(self, request, id, station_id):
+        try:
+            route = Route.objects.exclude(Status="deleted").get(pk=id)
+            if route.update_status():
+                route.save()
+        except Route.DoesNotExist:
+            return ErrorResponse(f"找不到 ID 為 {id} 的行程", 404)
+        if route.Driver_id != request.user.UserID:
+            return ErrorResponse("您沒有權限修改此行程的停靠站", 403)
+        try:
+            route_station = route.RouteStations.exclude(Status="deleted").get(Station=station_id)
+            if route_station.OnPassengers.exists() or route_station.OffPassengers.exists():
+                return ErrorResponse("此停靠站已有上下車乘客，無法編輯")
+        except RouteStation.DoesNotExist:
+            route_station = RouteStation()
+            route_station.Route=route
+        try:
+            route_station.Station=Station.objects.get(pk=station_id)
+            route_station.Time=datetime.fromisoformat(request.json["datetime"])
+        except Station.DoesNotExist:
+            return ErrorResponse(f"找不到 ID 為 {station_id} 的站點")
+        except (KeyError, ValueError):
+            return BadRequestResponse()
+        route_station.save()
+        return HttpResponseNoContent()
+
+    @transaction.atomic
+    def delete(self, request, id, station_id):
+        try:
+            route = Route.objects.exclude(Status="deleted").get(pk=id)
+            if route.Driver_id != request.user.UserID:
+                return ErrorResponse("您沒有權限修改此行程的停靠站", 403)
+            route_station = route.RouteStations.exclude(Status="deleted").get(Station=station_id)
+        except Route.DoesNotExist:
+            return ErrorResponse(f"找不到 ID 為 {id} 的行程", 404)
+        except RouteStation.DoesNotExist:
+            return ErrorResponse("沒有指定的停靠站", 404)
+        if route.Status not in ["available", "full"]:
+            return ErrorResponse("此行程已過期", 403)
+        if route_station.OnPassengers.exists() or route_station.OffPassengers.exists():
+            return ErrorResponse("此停靠站已有上下車乘客，無法刪除", 403)
+        route_station.Status = "deleted"
+        route_station.save()
+        return HttpResponseNoContent()

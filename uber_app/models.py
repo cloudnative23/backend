@@ -42,8 +42,8 @@ class Request(models.Model):
     Passenger = models.ForeignKey("Account", db_column="PassengerID", on_delete=models.PROTECT,
                                   related_name="Requests")
     Route = models.ForeignKey("Route", db_column="RouteID", on_delete=models.PROTECT, related_name="Requests")
-    On = models.ForeignKey("RouteStation", db_column="On", on_delete=models.PROTECT, related_name="+")
-    Off = models.ForeignKey("RouteStation", db_column="Off", on_delete=models.PROTECT, related_name="+")
+    On = models.ForeignKey("RouteStation", db_column="On", on_delete=models.PROTECT, related_name="OnRequests")
+    Off = models.ForeignKey("RouteStation", db_column="Off", on_delete=models.PROTECT, related_name="OffRequests")
     Status = models.TextField(default="new")
     Work_Status = models.BooleanField(default=True)
     Date = models.DateField()
@@ -94,7 +94,7 @@ class Route(models.Model):
         if self.Date < date.today():
             self.Status = "expired"
             return True
-        for entry in self.RouteStations.all():
+        for entry in self.RouteStations.exclude(Status="deleted"):
             if entry.Time < datetime.now():
                 self.Status = "expired"
                 return True
@@ -137,7 +137,7 @@ class Route(models.Model):
         result['passengers'] = passengers
 
         # Populate Stations
-        for entry in self.RouteStations.all().order_by("Time"):
+        for entry in self.RouteStations.exclude(Status="deleted").order_by("Time"):
             station = entry.Station.to_dict()
             station['datetime'] = entry.Time.isoformat()
             station['on-passengers'] = list(entry.OnPassengers.values_list("Passenger_id", flat=True))
@@ -174,6 +174,7 @@ class RouteStation(models.Model):
     Route = models.ForeignKey("Route", db_column="RouteID", on_delete=models.CASCADE, related_name="RouteStations")
     Station = models.ForeignKey("Station", db_column="StationID", on_delete=models.PROTECT, related_name="+")
     Time = models.DateTimeField()
+    Status = models.TextField(default="normal")
 
     def __str__(self):
         return f'RouteID:{self.Route.RouteID}'
