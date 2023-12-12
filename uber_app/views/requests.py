@@ -5,6 +5,7 @@ from django.utils.decorators import method_decorator
 from datetime import date, datetime
 from django.db import transaction
 from django.db import models
+from django.db.models import Q
 import copy
 
 # /requests
@@ -58,7 +59,7 @@ class RequestsView(ProtectedView):
                 raise HttpResponseException(ErrorResponse(f"停靠站 {id} 不在路線上", 404))
             if off.Time < on.Time:
                 raise HttpResponseException(ErrorResponse("上車站點的停靠時間為下車站點後面", 400))
-            if Request.objects.filter(Status="new").filter(
+            if Request.objects.filter(Q(Status="new") | Q(Status="accepted")).filter(
                 On=on, Off=off, Route=route, Passenger=request.user.UserID).exists():
                 raise HttpResponseException(ErrorResponse("已提出相同的請求，請求不能重複", 404))
             if route.update_status():
