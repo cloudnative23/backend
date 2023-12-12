@@ -157,7 +157,7 @@ class RequestsIDAcceptView(ProtectedView):
             route.Status="full"
             route.save()
             # Cancel other requests
-            for _request in route.requests.filter(Status="new"):
+            for _request in route.Requests.filter(Status="new"):
                 _request.Status="canceled"
                 _request.save()
                 notification = Notification()
