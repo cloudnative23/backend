@@ -5,7 +5,7 @@ from django.utils.decorators import method_decorator
 from datetime import date, datetime
 from django.db import transaction
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, F
 import copy
 
 # /requests
@@ -81,6 +81,9 @@ class RequestsView(ProtectedView):
             notification.Category = "request"
             notification.For = "driver"
             notification.save()
+            user = route.Driver
+            user.Driver_Notification_Count = F("Driver_Notification_Count") + 1
+            user.save()
             return JsonResponse(_request.to_dict())
         except (KeyError, ValueError):
             raise HttpResponseException(BadRequestResponse())
@@ -162,6 +165,9 @@ class RequestsIDAcceptView(ProtectedView):
                 notification.Category = "request-canceled"
                 notification.User_id = _request.Passenger_id
                 notification.For = "passenger"
+                user = _request.Passenger
+                user.Passenger_Notification_Count = F("Passenger_Notification_Count") + 1
+                user.save()
                 notification.save()
         return HttpResponseNoContent()
 
@@ -186,6 +192,9 @@ class RequestsIDDenyView(ProtectedView):
             notification.User_id = _request.Passenger_id
             notification.For = "passenger"
             notification.save()
+            user = _request.Passenger
+            user.Passenger_Notification_Count = F("Passenger_Notification_Count") + 1
+            user.save()
             return HttpResponseNoContent()
         except Request.DoesNotExist:
             raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的請求", 404))
