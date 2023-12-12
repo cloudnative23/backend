@@ -219,7 +219,11 @@ class RoutesIDStationsIDView(ProtectedView):
         try:
             route_station = route.RouteStations.exclude(Status="deleted").get(Station=station_id)
             if route_station.OnPassengers.exists() or route_station.OffPassengers.exists():
-                return ErrorResponse("此停靠站已有上下車乘客，無法編輯")
+                return ErrorResponse("此停靠站已有上下車乘客，無法編輯", 403)
+            if (route_station.OnRequests.filter(Status="new").exists() or
+                route_station.OffRequests.filter(Status="new").exists()):
+                return ErrorResponse("此站點已有未回應乘客請求，無法編輯", 403)
+
         except RouteStation.DoesNotExist:
             route_station = RouteStation()
             route_station.Route=route
@@ -227,7 +231,7 @@ class RoutesIDStationsIDView(ProtectedView):
             route_station.Station=Station.objects.get(pk=station_id)
             route_station.Time=datetime.fromisoformat(request.json["datetime"])
         except Station.DoesNotExist:
-            return ErrorResponse(f"找不到 ID 為 {station_id} 的站點")
+            return ErrorResponse(f"找不到 ID 為 {station_id} 的站點", 404)
         except (KeyError, ValueError):
             return BadRequestResponse()
         route_station.save()
@@ -249,6 +253,9 @@ class RoutesIDStationsIDView(ProtectedView):
             return ErrorResponse("此行程已過期", 403)
         if route_station.OnPassengers.exists() or route_station.OffPassengers.exists():
             return ErrorResponse("此停靠站已有上下車乘客，無法刪除", 403)
+        if (route_station.OnRequests.filter(Status="new").exists() or
+            route_station.OffRequests.filter(Status="new").exists()):
+            return ErrorResponse("此站點已有未回應乘客請求，無法刪除", 403)
         route_station.Status = "deleted"
         route_station.save()
         # TODO: Cancel requests with this station
