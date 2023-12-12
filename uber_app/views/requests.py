@@ -22,13 +22,16 @@ class RequestsView(ProtectedView):
             query = query.filter(Passenger=request.user.UserID)
         else:
             query = query.filter(Route__Driver=request.user.UserID)
-        try:
-            # 前端會進行 Filter
-            query.order_by("Date", "-Work_Status")
-            result = [_request.to_dict() for _request in query]
-            return JsonResponse(result, safe=False)
-        except:
-            raise HttpResponseException(BadRequestResponse())
+        # 前端會進行 Filter
+        query = query.order_by("-Timestamp")
+        result = []
+        for _request in query:
+            if _request.Route.update_status():
+                _request.Route.save()
+            if _request.update_status():
+                _request.save()
+            result.append(_request.to_dict())
+        return JsonResponse(result, safe=False)
 
     # Post New Request
     @transaction.atomic
@@ -79,6 +82,10 @@ class RequestsIDView(ProtectedView):
     def get(self,request,id):
         try:
             _request = Request.objects.get(pk=id)
+            if _request.Route.update_status():
+                _request.Route.save()
+            if _request.update_status():
+                _request.save()
         except Request.DoesNotExist:
             raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 請求", 404))
         return JsonResponse(_request.to_dict())
@@ -89,6 +96,12 @@ class RequestsIDView(ProtectedView):
             _request = Request.objects.get(pk=id)
             if _request.Passenger.UserID != request.user.UserID:
                 raise HttpResponseException(ErrorResponse(f"您沒有權限刪除此請求", 403))
+            if _request.Route.update_status():
+                _request.Route.save()
+            if _request.update_status():
+                _request.save()
+            if _request.Status != "new":
+                raise HttpResponseException(ErrorResponse(f"此請求已失效，無法刪除", 403))
             _request.Status = "deleted"
             _request.save()
         except Request.DoesNotExist:
@@ -102,6 +115,10 @@ class RequestsIDAcceptView(ProtectedView):
             _request = Request.objects.get(pk=id)
         except Request.DoesNotExist:
             raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的請求", 404))
+        if _request.Route.update_status():
+            _request.Route.save()
+        if _request.update_status():
+            _request.save()
         if _request.Status != "new":
             raise HttpResponseException(ErrorResponse("此請求已失效", 400))
         if _request.Route.Driver_id != request.user.UserID:
@@ -116,6 +133,16 @@ class RequestsIDAcceptView(ProtectedView):
         _RoutePassenger.save()
         _request.Status = "accepted"
         _request.save()
+        # check whether the route is full or not
+        route = _request.Route
+        route.refresh_from_db()
+        if route.Passengers.count() >= route.Car_Capacity:
+            # Set route as full
+            route.Status="full"
+            route.save()
+            # Cancel other requests
+            # TODO: send notifications
+            route.requests.filter(Status="new").update(Status="canceled")
         return HttpResponseNoContent()
 
 class RequestsIDDenyView(ProtectedView):
@@ -123,6 +150,10 @@ class RequestsIDDenyView(ProtectedView):
     def put(self,request,id):
         try:
             _request = Request.objects.get(pk=id)
+            if _request.Route.update_status():
+                _request.Route.save()
+            if _request.update_status():
+                _request.save()
             if _request.Status != "new":
                 raise HttpResponseException(ErrorResponse("此請求已失效", 400))
             if _request.Route.Driver.UserID != request.user.UserID:

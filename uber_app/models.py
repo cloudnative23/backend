@@ -52,6 +52,12 @@ class Request(models.Model):
     def __str__(self):
         return f'RequestID:{self.RequestID}'
 
+    def update_status(self):
+        if self.Route.Status != "available" and self.Status == "new":
+            self.Status = "expired"
+            return True
+        return False
+
     def to_dict(self):
         return {
             "id": self.RequestID,
@@ -60,8 +66,8 @@ class Request(models.Model):
             "timestamp": self.Timestamp.isoformat(),
             "date": self.Date.isoformat(),
             "workStatus": self.Work_Status,
-            "on-station": self.On.Station.to_dict(),
-            "off-station": self.Off.Station.to_dict(),
+            "on-station": self.On.to_dict(passenger=False),
+            "off-station": self.Off.to_dict(passenger=False),
             "route": self.Route.to_dict()
         }
 
@@ -131,8 +137,8 @@ class Route(models.Model):
             if entry.Passenger_id == uid:
                 result.update({
                     'workStatus': entry.Work_Status,
-                    'on-station': entry.On.Station.to_dict(),
-                    'off-station': entry.Off.Station.to_dict()
+                    'on-station': entry.On.to_dict(passenger=False),
+                    'off-station': entry.Off.to_dict(passenger=False)
                 })
         result['passengers'] = passengers
 
@@ -179,13 +185,16 @@ class RouteStation(models.Model):
     def __str__(self):
         return f'RouteID:{self.Route.RouteID}'
 
-    def to_dict(self):
+    def to_dict(self, passenger=True):
         result = self.Station.to_dict()
         result.update({
-            "datetime": self.Time.isoformat(),
-            "on-passengers": [entry.Passenger_id for entry in self.OnPassengers],
-            "off-passengers": [entry.Passenger_id for entry in self.OffPassengers]
+            "datetime": self.Time.isoformat()
         })
+        if passenger:
+            result.update({
+                "on-passengers": [entry.Passenger_id for entry in self.OnPassengers.all()],
+                "off-passengers": [entry.Passenger_id for entry in self.OffPassengers.all()]
+            })
         return result
 
     class Meta:

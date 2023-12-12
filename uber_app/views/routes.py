@@ -33,7 +33,12 @@ class RoutesView(ProtectedView):
         ).order_by("similiarity")
         if n > 0:
             query = query[:n]
-        result = [route.to_dict() for route in query]
+        result = []
+        for route in query:
+            if route.update_status():
+                route.save()
+            if route.Status == "available":
+                result.append(route.to_dict())
         return JsonResponse(result, safe=False)
 
     def driver(self, user, n, history=False):
@@ -48,7 +53,11 @@ class RoutesView(ProtectedView):
             query.reverse()
         if n > 0:
             query = query[:n]
-        result = [route.to_dict(uid=user.UserID) for route in query]
+        result = []
+        for route in query:
+            if route.update_status():
+                route.save()
+            result.append(route.to_dict())
         return JsonResponse(result, safe=False)
 
     def passenger(self, user, n, history=False):
@@ -69,7 +78,11 @@ class RoutesView(ProtectedView):
             query.reverse()
         if n > 0:
             query = query[:n]
-        result = [route.to_dict(uid=user.UserID) for route in query]
+        result = []
+        for route in query:
+            if route.update_status():
+                route.save()
+            result.append(route.to_dict())
         return JsonResponse(result, safe=False)
 
     def get(self, request):
@@ -166,6 +179,7 @@ class RoutesIDView(ProtectedView):
                 raise HttpResponseException(ErrorResponse("您沒有權限刪除此行程", 403))
             if route.RoutePassengers.count() > 0:
                 raise HttpResponseException(ErrorResponse("此行程已有乘客搭乘，不能刪除", 403))
+            # TODO: cancel all requests
             route.Status = "deleted"
             route.save()
         except Route.DoesNotExist:
@@ -217,6 +231,7 @@ class RoutesIDStationsIDView(ProtectedView):
         except (KeyError, ValueError):
             return BadRequestResponse()
         route_station.save()
+        # TODO: Cancel requests with this station
         return HttpResponseNoContent()
 
     @transaction.atomic
@@ -236,4 +251,5 @@ class RoutesIDStationsIDView(ProtectedView):
             return ErrorResponse("此停靠站已有上下車乘客，無法刪除", 403)
         route_station.Status = "deleted"
         route_station.save()
+        # TODO: Cancel requests with this station
         return HttpResponseNoContent()
