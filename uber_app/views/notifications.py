@@ -17,9 +17,9 @@ class NotificationView(ProtectedView):
             query = query.filter(For="passenger")
         elif mode == "driver":
             query = query.filter(For="driver")
-        query.order_by("Timestamp")
+        query = query.order_by("-Timestamp")
         notifications = query.all()
-        result = [notification for notification in notifications]
+        result = [notification.to_dict() for notification in notifications]
         return JsonResponse(result, safe=False)
 
 class NotificationReadView(ProtectedView):

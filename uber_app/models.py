@@ -240,5 +240,5 @@ class Notification(models.Model):
             "read": self.Read,
             "for": self.For,
             "category": self.Category,
-            "request": self.request.to_dict(),
+            "request": self.Request.to_dict(),
         }

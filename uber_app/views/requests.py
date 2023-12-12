@@ -75,6 +75,12 @@ class RequestsView(ProtectedView):
             _request.Status="new"
             _request.Date=date.today()
             _request.save()
+            notification = Notification()
+            notification.Request = _request
+            notification.User_id = route.Driver_id
+            notification.Category = "request"
+            notification.For = "driver"
+            notification.save()
             return JsonResponse(_request.to_dict())
         except (KeyError, ValueError):
             raise HttpResponseException(BadRequestResponse())
@@ -134,6 +140,12 @@ class RequestsIDAcceptView(ProtectedView):
         _RoutePassenger.save()
         _request.Status = "accepted"
         _request.save()
+        notification = Notification()
+        notification.Request = _request
+        notification.Category = "request-accepted"
+        notification.User = _request.Passenger
+        notification.For = "passenger"
+        notification.save()
         # check whether the route is full or not
         route = _request.Route
         route.refresh_from_db()
@@ -142,8 +154,15 @@ class RequestsIDAcceptView(ProtectedView):
             route.Status="full"
             route.save()
             # Cancel other requests
-            # TODO: send notifications
-            route.requests.filter(Status="new").update(Status="canceled")
+            for _request in route.requests.filter(Status="new"):
+                _request.Status="canceled"
+                _request.save()
+                notification = Notification()
+                notification.Request = _request
+                notification.Category = "request-canceled"
+                notification.User_id = _request.Passenger_id
+                notification.For = "passenger"
+                notification.save()
         return HttpResponseNoContent()
 
 class RequestsIDDenyView(ProtectedView):
@@ -161,6 +180,12 @@ class RequestsIDDenyView(ProtectedView):
                 raise HttpResponseException(ErrorResponse("您沒有權限接受此請求", 403))
             _request.Status = "denied"
             _request.save()
+            notification = Notification()
+            notification.Request = _request
+            notification.Category = "request-denied"
+            notification.User_id = _request.Passenger_id
+            notification.For = "passenger"
+            notification.save()
             return HttpResponseNoContent()
         except Request.DoesNotExist:
             raise HttpResponseException(ErrorResponse(f"找不到 ID 為 {id} 的請求", 404))
