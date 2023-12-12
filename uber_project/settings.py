@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-p$xo-9*dm)p!g85_&$ael#9x2_6)=nbg5y_ej2o#!n!&j-c7#f
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 LOGIN_URL = 'login/'
 
 # Application definition
@@ -139,3 +139,4 @@ CACHES = {
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"  # Use the 'default' cache alias defined earlier
 SESSION_COOKIE_NAME = "SESSION_ID"
+CORS_ALLOW_ALL_ORIGINS=True
