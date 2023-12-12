@@ -8,8 +8,8 @@ from django.utils.decorators import method_decorator
 class UsersView(ProtectedView):
     def get(self, request):
         user: Account = request.user
-        driver_req_count = Request.objects.filter(Route__Driver=user.UserID).count()
-        passenger_req_count = Request.objects.filter(Passenger=user.UserID).count()
+        driver_req_count = Request.objects.filter(Status="new", Route__Driver=user.UserID).count()
+        passenger_req_count = Request.objects.filter(Status="new", Passenger=user.UserID).count()
         return JsonResponse({
             'id': user.UserID,
             'name': user.Name,
