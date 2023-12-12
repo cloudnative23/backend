@@ -140,3 +140,4 @@ SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"  # Use the 'default' cache alias defined earlier
 SESSION_COOKIE_NAME = "SESSION_ID"
 CORS_ALLOW_ALL_ORIGINS=True
+CORS_ALLOW_CREDENTIALS=True
