@@ -1,8 +1,26 @@
 from uber_app.models import Account, Request, Route
 from django.http import JsonResponse
 from uber_app.views.base import *
-from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import check_password, make_password
 from django.utils.decorators import method_decorator
+from django.core.validators import validate_email
+from django.db import IntegrityError
+
+# /register
+class RegisterView(ProtectedView):
+    @method_decorator(json_api)
+    def post(self, request):
+        user = Account()
+        try:
+            user.Email = request.json["email"]
+            user.Password = make_password(request.json["password"])
+            user.Avatar = request.json["avatar"]
+            user.Phone = request.json["phone"]
+            user.Name = request.json["name"]
+            user.save()
+        except IntegrityError:
+            return ErrorResponse("E-mail 已被使用")
+        return JsonResponse(user.to_dict())
 
 # /me
 class UsersView(ProtectedView):

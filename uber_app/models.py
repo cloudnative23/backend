@@ -18,7 +18,7 @@ class Account(models.Model):
     def get_short_name(self) -> str:
         return self.Name
 
-    def to_dict(self, contact=False):
+    def to_dict(self, contact=True):
         result = {
             "id": self.UserID,
             "name": self.Name,
