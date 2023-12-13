@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 from dotenv import load_dotenv
+from corsheaders.defaults import default_headers
 import os
 
 # Load .env file
@@ -143,5 +144,9 @@ CORS_ALLOW_ALL_ORIGINS=True
 CORS_ALLOW_CREDENTIALS=True
 SESSION_COOKIE_SAMESITE="None"
 SESSION_COOKIE_HTTPONLY=False
+CORS_ALLOW_HEADERS=(
+    *default_headers,
+    "cookie",
+)
 if os.environ.get('SECURE_COOKIE', 'N') == 'Y':
     SESSION_COOKIE_SECURE=True
