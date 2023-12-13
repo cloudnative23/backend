@@ -61,7 +61,11 @@ class RequestsView(ProtectedView):
                 raise HttpResponseException(ErrorResponse("上車站點的停靠時間為下車站點後面", 400))
             if Request.objects.filter(Q(Status="new") | Q(Status="accepted")).filter(
                 On=on, Off=off, Route=route, Passenger=request.user.UserID).exists():
-                raise HttpResponseException(ErrorResponse("已提出相同的請求，請求不能重複", 404))
+                raise HttpResponseException(ErrorResponse("已提出相同的請求，請求不能重複", 403))
+            if RoutePassenger.objects.filter(Passenger=request.user.UserID,
+                                             Work_Status=body["workStatus"],
+                                             Route__Date=route.Date).exists():
+                raise HttpResponseException(ErrorResponse("在同時段已有搭乘其他路線，不能在該時段提出新請求", 403))
             if route.update_status():
                 route.save()
             if route.Status != "available":
@@ -149,6 +153,25 @@ class RequestsIDAcceptView(ProtectedView):
         notification.User = _request.Passenger
         notification.For = "passenger"
         notification.save()
+        passenger = _request.Passenger
+        date = _request.Date
+        work_Status = _request.Work_Status
+
+        for _request in Request.objects.filter(Passenger=passenger.UserID,
+                                               Date=date,
+                                               Work_Status=work_Status,
+                                               Status="new"):
+            _request.Status="canceled"
+            _request.save()
+            notification = Notification()
+            notification.Request = _request
+            notification.Category = "request-canceled"
+            notification.User_id = passenger.UserID
+            notification.For = "passenger"
+            notification.save()
+            passenger.Passenger_Notification_Count = F("Passenger_Notification_Count") + 1
+            passenger.save()
+
         # check whether the route is full or not
         route = _request.Route
         route.refresh_from_db()
@@ -165,9 +188,9 @@ class RequestsIDAcceptView(ProtectedView):
                 notification.Category = "request-canceled"
                 notification.User_id = _request.Passenger_id
                 notification.For = "passenger"
-                user = _request.Passenger
-                user.Passenger_Notification_Count = F("Passenger_Notification_Count") + 1
-                user.save()
+                passenger = _request.Passenger
+                passenger.Passenger_Notification_Count = F("Passenger_Notification_Count") + 1
+                passenger.save()
                 notification.save()
         return HttpResponseNoContent()
 
