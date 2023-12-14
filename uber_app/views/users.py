@@ -21,7 +21,7 @@ class RegisterView(BaseView):
         except IntegrityError:
             return ErrorResponse("E-mail 已被使用")
         except (KeyError, ValueError):
-             return BadRequestResponse()
+            return BadRequestResponse()
         return JsonResponse(user.to_dict())
 
 # /me
