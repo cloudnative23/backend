@@ -7,7 +7,7 @@ from django.core.validators import validate_email
 from django.db import IntegrityError
 
 # /register
-class RegisterView(ProtectedView):
+class RegisterView(BaseView):
     @method_decorator(json_api)
     def post(self, request):
         user = Account()
@@ -20,6 +20,8 @@ class RegisterView(ProtectedView):
             user.save()
         except IntegrityError:
             return ErrorResponse("E-mail 已被使用")
+        except (KeyError, ValueError):
+             return BadRequestResponse()
         return JsonResponse(user.to_dict())
 
 # /me

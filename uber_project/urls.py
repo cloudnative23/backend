@@ -22,12 +22,12 @@ from uber_app.views.requests import *
 from uber_app.views.notifications import *
 
 urlpatterns = [
-    path("me", UsersView.as_view()),
-    path("login", LoginView.as_view()),
-    path("logout", LogoutView.as_view()),
-    path("register", RegisterView.as_view()),
-    path("stations", StationsView.as_view()),
-    path("stations/<int:id>", StationsIdView.as_view()),
+    path("me", UsersView.as_view(),name = 'user_me'),
+    path("login", LoginView.as_view(),name = 'user_login'),
+    path("logout", LogoutView.as_view(),name = 'user_logout'),
+    path("register", RegisterView.as_view(),name = 'user_register'),
+    path("stations", StationsView.as_view(),name = 'all_stations'),
+    path("stations/<int:id>", StationsIdView.as_view(),name = 'specific_station'),
     path("routes", RoutesView.as_view()),
     path("routes/<int:id>", RoutesIDView.as_view()),
     path("routes/<int:id>/stations", RoutesIDStationsView.as_view()),
