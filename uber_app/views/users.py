@@ -7,7 +7,7 @@ from django.core.validators import validate_email
 from django.db import IntegrityError
 
 # /register
-class RegisterView(ProtectedView):
+class RegisterView(BaseView):
     @method_decorator(json_api)
     def post(self, request):
         user = Account()
