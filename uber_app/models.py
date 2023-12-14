@@ -112,7 +112,6 @@ class Route(models.Model):
             "status": self.Status,
             "date": self.Date,
             "driver": self.Driver.to_dict(contact=True),
-            "n-passengers": self.RoutePassengers.count(),
             "carInfo": {
                 "model": self.Car_Model,
                 "color": self.Car_Color,

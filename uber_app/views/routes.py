@@ -230,13 +230,15 @@ class RoutesIDStationsIDView(ProtectedView):
         try:
             route_station.Station=Station.objects.get(pk=station_id)
             route_station.Time=datetime.fromisoformat(request.json["datetime"])
+            Staion_name = Station.objects.get(pk=station_id).StationName
         except Station.DoesNotExist:
             return ErrorResponse(f"找不到 ID 為 {station_id} 的站點", 404)
         except (KeyError, ValueError):
             return BadRequestResponse()
         route_station.save()
+        res = {'id':station_id,'name':Staion_name,'datetime':request.json["datetime"],'on':[],'off':[]}
         # TODO: Cancel requests with this station
-        return HttpResponseNoContent()
+        return JsonResponse(res)
 
     @transaction.atomic
     def delete(self, request, id, station_id):

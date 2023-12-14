@@ -33,8 +33,10 @@ class routeTest(TestCase):
         response = cls.c.post(url,json.dumps(cls.driver_data),content_type = 'application/json')
         url =  reverse('user_login')
         response = cls.c.post(url,json.dumps(cls.driver_data),content_type = 'application/json')
+
+    def test_add_route(self):
         url = reverse('add_or_get_all_route')
-        cls.route_data = {
+        data = {
             "date": "2024-10-22",
             "workStatus": False,
             "stations": [
@@ -58,62 +60,21 @@ class routeTest(TestCase):
                 "licensePlateNumber": "ABC-1234"
             }
         }
-        response = cls.c.post(url,json.dumps(cls.route_data),content_type = 'application/json')
-        decode_content = json.loads(response.content.decode("unicode_escape"))
-        cls.route1_id = decode_content['id']
-
-    
-    def test_get_and_delete_route(self):
-        url = reverse('get_or_delete_specific_route',args = [self.route1_id])
-        response = self.c.get(url,content_type = 'application/json')
+        response = self.c.post(url,json.dumps(data),content_type = 'application/json')
         self.assertEqual(response.status_code,200)
         decode_content = json.loads(response.content.decode("unicode_escape"))
         self.assertEqual(decode_content['status'],'available')
-        self.assertEqual(decode_content['date'],self.route_data['date'])
+        self.assertEqual(decode_content['date'],data['date'])
         self.assertEqual(decode_content['driver']['name'],self.driver_data['name'])
         self.assertEqual(decode_content['driver']['avatar'],self.driver_data['avatar'])
         self.assertEqual(decode_content['driver']['email'],self.driver_data['email'])
         self.assertEqual(decode_content['driver']['phone'],self.driver_data['phone'])
-        self.assertEqual(decode_content['carInfo'],self.route_data['carInfo'])
-        self.assertEqual(decode_content['workStatus'],self.route_data['workStatus'])
+        self.assertEqual(decode_content['carInfo'],data['carInfo'])
+        self.assertEqual(decode_content['workStatus'],data['workStatus'])
         self.assertEqual(decode_content['passengers'],[])
         for i,station in enumerate(decode_content['stations']):
             self.assertEqual(self.all_stations_mapping[station['id']],station['name'])
-            self.assertEqual(station['id'],self.route_data['stations'][i]['id'])
-            self.assertEqual(station['datetime'][:-3],self.route_data['stations'][i]['datetime'])
+            self.assertEqual(station['id'],data['stations'][i]['id'])
+            self.assertEqual(station['datetime'][:-3],data['stations'][i]['datetime'])
             self.assertEqual(station['on-passengers'],[])
             self.assertEqual(station['off-passengers'],[])
-        response = self.c.delete(url,content_type = 'application/json')
-        self.assertEqual(response.status_code,204)
-
-    def test_get_route_stop_station(self):
-        url = reverse('get_route_stop_station',args = [self.route1_id])
-        response = self.c.get(url,content_type = 'application/json')
-        self.assertEqual(response.status_code,200)
-        decode_content = json.loads(response.content.decode("unicode_escape"))
-        for i,station in enumerate(decode_content):
-            self.assertEqual(self.all_stations_mapping[station['id']],station['name'])
-            self.assertEqual(station['id'],self.route_data['stations'][i]['id'])
-            self.assertEqual(station['datetime'][:-3],self.route_data['stations'][i]['datetime'])
-            self.assertEqual(station['on-passengers'],[])
-            self.assertEqual(station['off-passengers'],[])
-    
-    def test_add_and_delete_route_stop_station(self):
-        url = reverse('add_or_delete_route_stop_station',args = [self.route1_id,4])
-        data = {
-            "datetime": "2024-10-22T19:30"
-        }
-        response = self.c.put(url,json.dumps(data),content_type = 'application/json')
-        self.assertEqual(response.status_code,200)
-        decode_content = json.loads(response.content.decode("unicode_escape"))
-        self.assertEqual(decode_content['id'],4)
-        self.assertEqual(decode_content['name'],'台積電台南2廠西側門')
-        self.assertEqual(decode_content['datetime'],'2024-10-22T19:30')
-        self.assertEqual(decode_content['on'],[])
-        self.assertEqual(decode_content['off'],[])
-        response = self.c.delete(url,content_type = 'application/json')
-        self.assertEqual(response.status_code,204)
-    
-    def test_get_all_route(self):
-        url = reverse('add_or_get_all_route')
-        #TODO

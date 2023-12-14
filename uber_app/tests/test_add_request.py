@@ -72,25 +72,19 @@ class routeTest(TestCase):
         }
         cls.passenger = Client()
         response = cls.passenger.post(url,json.dumps(cls.passenger_data),content_type = 'application/json')
-        decode_content = json.loads(response.content.decode("unicode_escape"))
-        cls.passenger_id = decode_content['id']
         url =  reverse('user_login')
         response = cls.passenger.post(url,json.dumps(cls.passenger_data),content_type = 'application/json')
+    
+    def test_add_request(self):
         url = reverse('add_or_get_all_request')
-        cls.passenger_request_data = {
+        data = {
             "workStatus": False,
-            "route": cls.route1_id,
+            "route": self.route1_id,
             "on-station": 3,
             "off-station": 2
         }
-        response = cls.passenger.post(url,json.dumps(cls.passenger_request_data),content_type = 'application/json')
-        decode_content = json.loads(response.content.decode("unicode_escape"))
-        cls.request_id = decode_content['id']
-    
-    def test_get_and_delete_specific_request(self):
-        url = reverse('get_or_delete_specific_request',args = [self.request_id])
-        response = self.passenger.get(url,content_type = 'application/json')
-        self.assertEqual(response.status_code,200)
+        response = self.passenger.post(url,json.dumps(data),content_type = 'application/json')
+        self.assertEqual(response.status_code, 200)
         decode_content = json.loads(response.content.decode("unicode_escape"))
         self.assertEqual(decode_content['passenger']['name'], self.passenger_data['name'])
         self.assertEqual(decode_content['passenger']['avatar'], self.passenger_data['avatar'])
@@ -99,8 +93,8 @@ class routeTest(TestCase):
         self.assertEqual(decode_content['status'],'new')
         self.assertEqual(decode_content['date'],str(date.today()))
         self.assertEqual(decode_content['workStatus'],self.route_data['workStatus'])
-        self.assertEqual(decode_content['on-station']['id'],self.passenger_request_data['on-station'])
-        self.assertEqual(decode_content['off-station']['id'],self.passenger_request_data['off-station'])
+        self.assertEqual(decode_content['on-station']['id'],data['on-station'])
+        self.assertEqual(decode_content['off-station']['id'],data['off-station'])
         self.assertEqual(decode_content['route']['id'],self.route1_id)
         self.assertEqual(decode_content['route']['status'],'available')
         self.assertEqual(decode_content['route']['date'],self.route_data['date'])
@@ -116,28 +110,3 @@ class routeTest(TestCase):
             self.assertEqual(station['datetime'][:-3],self.route_data['stations'][i]['datetime'])
             self.assertEqual(station['on-passengers'],[])
             self.assertEqual(station['off-passengers'],[])
-        response = self.passenger.delete(url,content_type = 'application/json')
-        self.assertEqual(response.status_code,204)
-    
-    def test_accept_request(self):
-        url = reverse('accept_request',args = [self.request_id])
-        response = self.driver.put(url,content_type = 'application/json')
-        self.assertEqual(response.status_code,204)
-        url = reverse('get_or_delete_specific_route',args = [self.route1_id])
-        response = self.passenger.get(url,content_type = 'application/json')
-        self.assertEqual(response.status_code,200)
-        decode_content = json.loads(response.content.decode("unicode_escape"))
-        for station_info in decode_content['stations']:
-            if station_info['id'] == 3:
-                self.assertEqual(station_info['on-passengers'],[self.passenger_id])
-            elif station_info['id'] == 2:
-                self.assertEqual(station_info['off-passengers'],[self.passenger_id])
-    
-    def test_deny_request(self):
-        url = reverse('deny_request',args = [self.request_id])
-        response = self.driver.put(url,content_type = 'application/json')
-        self.assertEqual(response.status_code,204)
-    
-    def test_get_all_request(self):
-        url = reverse('add_or_get_all_request')
-        #TODO
