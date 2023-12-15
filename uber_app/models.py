@@ -106,7 +106,7 @@ class Route(models.Model):
                 return True
         return False
 
-    def to_dict(self, uid=None):
+    def to_dict(self, uid=None, identity=None):
         result = {
             "id": self.RouteID,
             "status": self.Status,
@@ -120,7 +120,7 @@ class Route(models.Model):
             }
         }
 
-        if self.Driver.UserID == uid:
+        if self.Driver.UserID == uid and identity != "passenger":
             result['workStatus'] = self.Work_Status
 
         # Populate Passengers
@@ -135,10 +135,13 @@ class Route(models.Model):
             off_passengers[entry.Off.Station_id]=entry.Passenger_id
             if entry.Passenger_id == uid:
                 result.update({
-                    'workStatus': entry.Work_Status,
                     'on-station': entry.On.to_dict(passenger=False),
                     'off-station': entry.Off.to_dict(passenger=False)
                 })
+                if identity != "driver":
+                    result.update({
+                        'workStatus': entry.Work_Status
+                    })
         result['passengers'] = passengers
 
         # Populate Stations

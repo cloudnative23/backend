@@ -31,7 +31,7 @@ class RoutesView(ProtectedView):
             similiarity=(F("on_station__Time") - on_datetime) +
                         (off_datetime - F("off_station__Time"))
         ).order_by("similiarity")
-        query = query.distinct("RouteID")
+        query = query.distinct()
         if n > 0:
             query = query[:n]
         result = []
@@ -50,7 +50,7 @@ class RoutesView(ProtectedView):
         else:
             query = query.filter(RouteStations__Time__gte=now)
         query = query.order_by("Date", "-Work_Status")
-        query = query.distinct("RouteID")
+        query = query.distinct()
         if history:
             query.reverse()
         if n > 0:
@@ -59,7 +59,7 @@ class RoutesView(ProtectedView):
         for route in query:
             if route.update_status():
                 route.save()
-            result.append(route.to_dict())
+            result.append(route.to_dict(uid=user.UserID, identity="driver"))
         return JsonResponse(result, safe=False)
 
     def passenger(self, user, n, history=False):
@@ -76,7 +76,7 @@ class RoutesView(ProtectedView):
         else:
             query = query.filter(condition)
         query.order_by("Date", "-UserPassenger__Work_Status")
-        query = query.distinct("RouteID")
+        query = query.distinct()
         if history:
             query.reverse()
         if n > 0:
@@ -85,7 +85,7 @@ class RoutesView(ProtectedView):
         for route in query:
             if route.update_status():
                 route.save()
-            result.append(route.to_dict())
+            result.append(route.to_dict(uid=user.UserID, identity="passenger"))
         return JsonResponse(result, safe=False)
 
     def get(self, request):
