@@ -29,9 +29,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-p$xo-9*dm)p!g85_&$ael#9x2_6)=nbg5y_ej2o#!n!&j-c7#f'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+if os.environ.get('DEBUG', 'N') == 'Y':
+    DEBUG = True
+    ALLOWED_HOSTS = ['*']
+    CORS_ALLOW_ALL_ORIGINS=True
+    CORS_ALLOW_CREDENTIALS=True
+    SESSION_COOKIE_SAMESITE="None"
+else:
+    DEBUG = False
+    ALLOWED_HOSTS = [os.environ.get('HOSTNAME', '*')]
 
-ALLOWED_HOSTS = ['*']
 LOGIN_URL = 'login/'
 
 # Application definition
@@ -79,7 +86,7 @@ WSGI_APPLICATION = 'uber_project.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': os.environ['ENGINE'],  #PostgreSQL
+        'ENGINE': 'django.db.backends.postgresql',  #PostgreSQL
         'NAME': os.environ['DB_NAME'],
         'USER': os.environ['DB_USER'],
         'PASSWORD': os.environ['DB_PASS'],
@@ -140,13 +147,5 @@ CACHES = {
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"  # Use the 'default' cache alias defined earlier
 SESSION_COOKIE_NAME = "SESSION_ID"
-CORS_ALLOW_ALL_ORIGINS=True
-CORS_ALLOW_CREDENTIALS=True
-SESSION_COOKIE_SAMESITE="None"
-SESSION_COOKIE_HTTPONLY=False
-CORS_ALLOW_HEADERS=(
-    *default_headers,
-    "cookie",
-)
 if os.environ.get('SECURE_COOKIE', 'N') == 'Y':
     SESSION_COOKIE_SECURE=True
