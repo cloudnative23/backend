@@ -2,7 +2,7 @@ ARG PYTHON_TAG=3.11-alpine
 FROM docker.io/python:3.11-alpine
 COPY . /app
 WORKDIR /app
-RUN rm /app/.env && python3 -m venv /venv
+RUN rm -f /app/.env && python3 -m venv /venv
 RUN python3 -m venv /venv
 ENV PIPENV_VERBOSITY=-1
 ENV VIRTUAL_ENV=/venv
