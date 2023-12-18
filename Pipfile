@@ -10,6 +10,7 @@ python-dotenv = "~=1.0"
 redis = "~=5.0"
 django-cors-headers = "*"
 django-extensions = "*"
+gunicorn = "*"
 
 [dev-packages]
 
