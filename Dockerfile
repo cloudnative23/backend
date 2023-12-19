@@ -8,4 +8,4 @@ ENV PIPENV_VERBOSITY=-1
 ENV VIRTUAL_ENV=/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN pip3 install pip --upgrade && pip3 install pipenv && pipenv sync
-CMD gunicorn -w $(($(nproc)*2+1)) uber_project.wsgi
+CMD gunicorn -b 0.0.0.0:80 -w $(($(nproc)*2+1)) uber_project.wsgi
