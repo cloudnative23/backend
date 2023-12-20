@@ -35,7 +35,11 @@ class RoutesView(ProtectedView):
         if n > 0:
             query = query[:n]
         result = []
+        ids = {}
         for route in query:
+            if route.RouteID in ids:
+                continue
+            ids.add(route.RouteID)
             if route.update_status():
                 route.save()
             if route.Status == "available":
