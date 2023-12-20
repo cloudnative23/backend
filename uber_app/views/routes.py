@@ -35,7 +35,7 @@ class RoutesView(ProtectedView):
         if n > 0:
             query = query[:n]
         result = []
-        ids = {}
+        ids = set()
         for route in query:
             if route.RouteID in ids:
                 continue
